@@ -70,7 +70,7 @@ describe('Utilities', () => {
       });
       it('should throw an error', () => {
         expect(() => getLastDeployedRef(mockedEnvironment)).toThrowError(
-          `PR was not found. Last deployed ref in ${mockedEnvironment} environment was not found`
+          'This action only supports push event on main branch or pull request events'
         );
       });
     });

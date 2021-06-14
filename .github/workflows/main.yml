@@ -44,6 +44,8 @@ jobs:
         with:
           rushJsonPath: ./__mocks__/rush.json
           environment: ${{ env.DEPLOY_ENVIRONMENT }}
+      - name: Should deploy all
+        run: echo "Deploy all projects - ${{ steps.test.outputs.deployAllPackages }}"
       - name: Show AWS projects
         run: echo "AWS Projects - ${{ steps.test.outputs.aws }}"
       - name: Show K8S projects

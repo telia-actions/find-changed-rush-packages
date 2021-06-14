@@ -42,9 +42,7 @@ export const getLastDeployedRef = (environment: string): string => {
     debug(`Push to main branch, looking for tag in main with environment - "${environment}"`);
     return getTagCommitSha(environment);
   }
-  throw new Error(
-    `PR was not found. Last deployed ref in ${environment} environment was not found`
-  );
+  throw new Error('This action only supports push event on main branch or pull request events');
 };
 
 const getDeployCategory = (projectFolder: string): DeployCategory | undefined => {
