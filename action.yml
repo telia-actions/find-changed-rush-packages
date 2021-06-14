@@ -1,0 +1,18 @@
+name: Rush changed packages
+description: Find changed packages and sort them according to review category
+inputs:
+  rushJsonPath:
+    description: Path to rush.json file.
+    required: false
+    default: './rush.json'
+  environment:
+    description: Deployment environment.
+    required: true
+outputs:
+  aws:
+    description: Changed aws projects.
+  k8s:
+    description: Changed k8s projects.
+runs:
+  using: node12
+  main: dist/index.js
