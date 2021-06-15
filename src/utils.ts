@@ -8,10 +8,7 @@ export const getChangedPackages = (
 ): ActionOutputs => {
   return rushProjects.reduce<ActionOutputs>((output, project) => {
     if (isChangeInPath(lastDeployedRef, project.projectFolder)) {
-      const deployCategory = getDeployCategory(project.projectFolder);
-      if (deployCategory) {
-        output[deployCategory].push(project.projectFolder);
-      }
+      updateOutput(project.projectFolder, output);
     }
     return output;
   }, getInitialOutput());
@@ -19,10 +16,7 @@ export const getChangedPackages = (
 
 export const getAllPackages = (rushProjects: RushProjects[]): ActionOutputs => {
   return rushProjects.reduce<ActionOutputs>((output, project) => {
-    const deployCategory = getDeployCategory(project.projectFolder);
-    if (deployCategory) {
-      output[deployCategory].push(project.projectFolder);
-    }
+    updateOutput(project.projectFolder, output);
     return output;
   }, getInitialOutput());
 };
@@ -56,10 +50,10 @@ const getInitialOutput = (): ActionOutputs => {
   };
 };
 
-const getDeployCategory = (projectFolder: string): DeployCategory | undefined => {
+const updateOutput = (projectFolder: string, output: ActionOutputs): void => {
   const deployCategory = readJson(`${projectFolder}/package.json`).deployCategory as DeployCategory;
   if (deployCategory && (deployCategory === 'aws' || deployCategory === 'k8s')) {
-    return deployCategory;
+    output[deployCategory].push(projectFolder);
   }
 };
 

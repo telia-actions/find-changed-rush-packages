@@ -6200,10 +6200,7 @@ const core_1 = __webpack_require__(186);
 const getChangedPackages = (lastDeployedRef, rushProjects) => {
     return rushProjects.reduce((output, project) => {
         if (github_1.isChangeInPath(lastDeployedRef, project.projectFolder)) {
-            const deployCategory = getDeployCategory(project.projectFolder);
-            if (deployCategory) {
-                output[deployCategory].push(project.projectFolder);
-            }
+            updateOutput(project.projectFolder, output);
         }
         return output;
     }, getInitialOutput());
@@ -6211,10 +6208,7 @@ const getChangedPackages = (lastDeployedRef, rushProjects) => {
 exports.getChangedPackages = getChangedPackages;
 const getAllPackages = (rushProjects) => {
     return rushProjects.reduce((output, project) => {
-        const deployCategory = getDeployCategory(project.projectFolder);
-        if (deployCategory) {
-            output[deployCategory].push(project.projectFolder);
-        }
+        updateOutput(project.projectFolder, output);
         return output;
     }, getInitialOutput());
 };
@@ -6244,10 +6238,10 @@ const getInitialOutput = () => {
         k8s: [],
     };
 };
-const getDeployCategory = (projectFolder) => {
+const updateOutput = (projectFolder, output) => {
     const deployCategory = exports.readJson(`${projectFolder}/package.json`).deployCategory;
     if (deployCategory && (deployCategory === 'aws' || deployCategory === 'k8s')) {
-        return deployCategory;
+        output[deployCategory].push(projectFolder);
     }
 };
 const getCommitShaForFeatureBranch = (pullRequestNumber, environment) => {
