@@ -6168,7 +6168,7 @@ const run = () => {
     try {
         const rushProjects = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
         const lastDeployedRef = utils_1.getLastDeployedRef(core_1.getInput('environment'));
-        const outputs = utils_1.getPackagesToDeploy(lastDeployedRef, rushProjects);
+        const outputs = utils_1.getChangedPackages(lastDeployedRef, rushProjects);
         for (const [key, value] of Object.entries(outputs)) {
             core_1.setOutput(key, value);
         }
@@ -6191,11 +6191,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getLastDeployedRef = exports.readJson = exports.getPackagesToDeploy = void 0;
+exports.getLastDeployedRef = exports.readJson = exports.getChangedPackages = void 0;
 const fs_1 = __importDefault(__webpack_require__(747));
 const github_1 = __webpack_require__(978);
 const core_1 = __webpack_require__(186);
-const getPackagesToDeploy = (lastDeployedRef, rushProjects) => {
+const getChangedPackages = (lastDeployedRef, rushProjects) => {
     return rushProjects.reduce((output, project) => {
         if (github_1.isChangeInPath(lastDeployedRef, project.projectFolder)) {
             const deployCategory = getDeployCategory(project.projectFolder);
@@ -6209,7 +6209,7 @@ const getPackagesToDeploy = (lastDeployedRef, rushProjects) => {
         k8s: [],
     });
 };
-exports.getPackagesToDeploy = getPackagesToDeploy;
+exports.getChangedPackages = getChangedPackages;
 const readJson = (jsonPath) => {
     return JSON.parse(fs_1.default
         .readFileSync(jsonPath, 'utf-8')

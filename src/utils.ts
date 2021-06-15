@@ -2,25 +2,29 @@ import fs from 'fs';
 import { getPullRequestNumber, getTagCommitSha, isMainBranch, isChangeInPath } from './github';
 import { debug } from '@actions/core';
 
-export const getPackagesToDeploy = (
+export const getChangedPackages = (
   lastDeployedRef: string,
   rushProjects: RushProjects[]
 ): ActionOutputs => {
-  return rushProjects.reduce<ActionOutputs>(
-    (output, project) => {
-      if (isChangeInPath(lastDeployedRef, project.projectFolder)) {
-        const deployCategory = getDeployCategory(project.projectFolder);
-        if (deployCategory) {
-          output[deployCategory].push(project.projectFolder);
-        }
+  return rushProjects.reduce<ActionOutputs>((output, project) => {
+    if (isChangeInPath(lastDeployedRef, project.projectFolder)) {
+      const deployCategory = getDeployCategory(project.projectFolder);
+      if (deployCategory) {
+        output[deployCategory].push(project.projectFolder);
       }
-      return output;
-    },
-    {
-      aws: [],
-      k8s: [],
     }
-  );
+    return output;
+  }, getInitialOutput());
+};
+
+export const getAllPackages = (rushProjects: RushProjects[]): ActionOutputs => {
+  return rushProjects.reduce<ActionOutputs>((output, project) => {
+    const deployCategory = getDeployCategory(project.projectFolder);
+    if (deployCategory) {
+      output[deployCategory].push(project.projectFolder);
+    }
+    return output;
+  }, getInitialOutput());
 };
 
 export const readJson = (jsonPath: string): any => {
@@ -43,6 +47,13 @@ export const getLastDeployedRef = (environment: string): string => {
     return getTagCommitSha(environment);
   }
   throw new Error('This action only supports push event on main branch or pull request events');
+};
+
+const getInitialOutput = (): ActionOutputs => {
+  return {
+    aws: [],
+    k8s: [],
+  };
 };
 
 const getDeployCategory = (projectFolder: string): DeployCategory | undefined => {

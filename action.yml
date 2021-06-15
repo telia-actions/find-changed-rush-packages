@@ -9,8 +9,6 @@ inputs:
     description: Deployment environment.
     required: true
 outputs:
-  deployAllPackages:
-    description: Requires to deploy all packages
   aws:
     description: Changed aws projects.
   k8s:

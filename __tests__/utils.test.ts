@@ -1,4 +1,4 @@
-import { getPackagesToDeploy, getLastDeployedRef, readJson } from '../src/utils';
+import { getAllPackages, getChangedPackages, getLastDeployedRef, readJson } from '../src/utils';
 import * as github from '../src/github';
 import mockedRushJson from '../__mocks__/rush';
 
@@ -75,18 +75,18 @@ describe('Utilities', () => {
       });
     });
   });
-  describe('getPackagesToDeploy method', () => {
+  describe('getChangedPackages method', () => {
     describe('given that changes exists for all packages', () => {
       beforeEach(() => {
         jest.spyOn(github, 'isChangeInPath').mockReturnValue(true);
       });
       it('should have foo project path in aws deploy category', () => {
-        const deployCategories = getPackagesToDeploy(mockedCommitSha, mockedRushJson.projects);
+        const deployCategories = getChangedPackages(mockedCommitSha, mockedRushJson.projects);
         const fooProject = mockedRushJson.projects.find((project) => project.packageName === 'foo');
         expect(deployCategories.aws).toContain(fooProject?.projectFolder);
       });
       it('should have bar project path in k8s deploy category', () => {
-        const deployCategories = getPackagesToDeploy(mockedCommitSha, mockedRushJson.projects);
+        const deployCategories = getChangedPackages(mockedCommitSha, mockedRushJson.projects);
         const barProject = mockedRushJson.projects.find((project) => project.packageName === 'bar');
         expect(deployCategories.k8s).toContain(barProject?.projectFolder);
       });
@@ -95,16 +95,28 @@ describe('Utilities', () => {
       beforeEach(() => {
         jest.spyOn(github, 'isChangeInPath').mockReturnValue(false);
       });
-      it('should have foo project path in aws deploy category', () => {
-        const deployCategories = getPackagesToDeploy(mockedCommitSha, mockedRushJson.projects);
+      it('should not have foo project path in aws deploy category', () => {
+        const deployCategories = getChangedPackages(mockedCommitSha, mockedRushJson.projects);
         const fooProject = mockedRushJson.projects.find((project) => project.packageName === 'foo');
         expect(deployCategories.aws).not.toContain(fooProject?.projectFolder);
       });
-      it('should have bar project path in k8s deploy category', () => {
-        const deployCategories = getPackagesToDeploy(mockedCommitSha, mockedRushJson.projects);
+      it('should not have bar project path in k8s deploy category', () => {
+        const deployCategories = getChangedPackages(mockedCommitSha, mockedRushJson.projects);
         const barProject = mockedRushJson.projects.find((project) => project.packageName === 'bar');
         expect(deployCategories.k8s).not.toContain(barProject?.projectFolder);
       });
+    });
+  });
+  describe('getAllPackages method', () => {
+    it('should have foo project path in aws deploy category', () => {
+      const deployCategories = getAllPackages(mockedRushJson.projects);
+      const fooProject = mockedRushJson.projects.find((project) => project.packageName === 'foo');
+      expect(deployCategories.aws).toContain(fooProject?.projectFolder);
+    });
+    it('should have bar project path in k8s deploy category', () => {
+      const deployCategories = getAllPackages(mockedRushJson.projects);
+      const barProject = mockedRushJson.projects.find((project) => project.packageName === 'bar');
+      expect(deployCategories.k8s).toContain(barProject?.projectFolder);
     });
   });
 });
