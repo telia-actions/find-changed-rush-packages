@@ -4,21 +4,21 @@ import { debug } from '@actions/core';
 
 export const getChangedPackages = (
   lastDeployedRef: string,
-  rushProjects: RushProjects[]
-): ActionOutputs => {
-  return rushProjects.reduce<ActionOutputs>((output, project) => {
-    if (isChangeInPath(lastDeployedRef, project.projectFolder)) {
-      updateOutput(project.projectFolder, output);
+  rushPackages: RushPackage[]
+): PackageCategories => {
+  return rushPackages.reduce<PackageCategories>((categories, _package) => {
+    if (isChangeInPath(lastDeployedRef, _package.projectFolder)) {
+      updatePackageCategories(_package.projectFolder, categories);
     }
-    return output;
-  }, getInitialOutput());
+    return categories;
+  }, getInitialPackageCategories());
 };
 
-export const getAllPackages = (rushProjects: RushProjects[]): ActionOutputs => {
-  return rushProjects.reduce<ActionOutputs>((output, project) => {
-    updateOutput(project.projectFolder, output);
-    return output;
-  }, getInitialOutput());
+export const getAllPackages = (rushPackages: RushPackage[]): PackageCategories => {
+  return rushPackages.reduce<PackageCategories>((categories, _package) => {
+    updatePackageCategories(_package.projectFolder, categories);
+    return categories;
+  }, getInitialPackageCategories());
 };
 
 export const readJson = (jsonPath: string): any => {
@@ -43,14 +43,14 @@ export const getLastDeployedRef = (environment: string): string => {
   throw new Error('This action only supports push event on main branch or pull request events');
 };
 
-const getInitialOutput = (): ActionOutputs => {
+const getInitialPackageCategories = (): PackageCategories => {
   return {
     aws: [],
     k8s: [],
   };
 };
 
-const updateOutput = (projectFolder: string, output: ActionOutputs): void => {
+const updatePackageCategories = (projectFolder: string, output: PackageCategories): void => {
   const deployCategory = readJson(`${projectFolder}/package.json`).deployCategory as DeployCategory;
   if (deployCategory && (deployCategory === 'aws' || deployCategory === 'k8s')) {
     output[deployCategory].push(projectFolder);
