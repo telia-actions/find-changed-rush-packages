@@ -6166,9 +6166,11 @@ const utils_1 = __webpack_require__(314);
 const core_1 = __webpack_require__(186);
 const run = () => {
     try {
-        const rushProjects = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
         const lastDeployedRef = utils_1.getLastDeployedRef(core_1.getInput('environment'));
-        const outputs = utils_1.getChangedPackages(lastDeployedRef, rushProjects);
+        const rushProjects = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
+        const outputs = lastDeployedRef
+            ? utils_1.getChangedPackages(lastDeployedRef, rushProjects)
+            : utils_1.getAllPackages(rushProjects);
         for (const [key, value] of Object.entries(outputs)) {
             core_1.setOutput(key, value);
         }
@@ -6191,7 +6193,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getLastDeployedRef = exports.readJson = exports.getChangedPackages = void 0;
+exports.getLastDeployedRef = exports.readJson = exports.getAllPackages = exports.getChangedPackages = void 0;
 const fs_1 = __importDefault(__webpack_require__(747));
 const github_1 = __webpack_require__(978);
 const core_1 = __webpack_require__(186);
@@ -6204,12 +6206,19 @@ const getChangedPackages = (lastDeployedRef, rushProjects) => {
             }
         }
         return output;
-    }, {
-        aws: [],
-        k8s: [],
-    });
+    }, getInitialOutput());
 };
 exports.getChangedPackages = getChangedPackages;
+const getAllPackages = (rushProjects) => {
+    return rushProjects.reduce((output, project) => {
+        const deployCategory = getDeployCategory(project.projectFolder);
+        if (deployCategory) {
+            output[deployCategory].push(project.projectFolder);
+        }
+        return output;
+    }, getInitialOutput());
+};
+exports.getAllPackages = getAllPackages;
 const readJson = (jsonPath) => {
     return JSON.parse(fs_1.default
         .readFileSync(jsonPath, 'utf-8')
@@ -6226,9 +6235,15 @@ const getLastDeployedRef = (environment) => {
         core_1.debug(`Push to main branch, looking for tag in main with environment - "${environment}"`);
         return github_1.getTagCommitSha(environment);
     }
-    throw new Error(`PR was not found. Last deployed ref in ${environment} environment was not found`);
+    throw new Error('This action only supports push event on main branch or pull request events');
 };
 exports.getLastDeployedRef = getLastDeployedRef;
+const getInitialOutput = () => {
+    return {
+        aws: [],
+        k8s: [],
+    };
+};
 const getDeployCategory = (projectFolder) => {
     const deployCategory = exports.readJson(`${projectFolder}/package.json`).deployCategory;
     if (deployCategory && (deployCategory === 'aws' || deployCategory === 'k8s')) {
