@@ -2,25 +2,23 @@ import fs from 'fs';
 import { getPullRequestNumber, getTagCommitSha, isMainBranch, isChangeInPath } from './github';
 import { debug } from '@actions/core';
 
-export const getPackagesToDeploy = (
+export const getChangedPackages = (
   lastDeployedRef: string,
-  rushProjects: RushProjects[]
-): ActionOutputs => {
-  return rushProjects.reduce<ActionOutputs>(
-    (output, project) => {
-      if (isChangeInPath(lastDeployedRef, project.projectFolder)) {
-        const deployCategory = getDeployCategory(project.projectFolder);
-        if (deployCategory) {
-          output[deployCategory].push(project.projectFolder);
-        }
-      }
-      return output;
-    },
-    {
-      aws: [],
-      k8s: [],
+  rushPackages: RushPackage[]
+): PackageCategories => {
+  return rushPackages.reduce<PackageCategories>((categories, _package) => {
+    if (isChangeInPath(lastDeployedRef, _package.projectFolder)) {
+      updatePackageCategories(_package.projectFolder, categories);
     }
-  );
+    return categories;
+  }, getInitialPackageCategories());
+};
+
+export const getAllPackages = (rushPackages: RushPackage[]): PackageCategories => {
+  return rushPackages.reduce<PackageCategories>((categories, _package) => {
+    updatePackageCategories(_package.projectFolder, categories);
+    return categories;
+  }, getInitialPackageCategories());
 };
 
 export const readJson = (jsonPath: string): any => {
@@ -42,15 +40,20 @@ export const getLastDeployedRef = (environment: string): string => {
     debug(`Push to main branch, looking for tag in main with environment - "${environment}"`);
     return getTagCommitSha(environment);
   }
-  throw new Error(
-    `PR was not found. Last deployed ref in ${environment} environment was not found`
-  );
+  throw new Error('This action only supports push event on main branch or pull request events');
 };
 
-const getDeployCategory = (projectFolder: string): DeployCategory | undefined => {
+const getInitialPackageCategories = (): PackageCategories => {
+  return {
+    aws: [],
+    k8s: [],
+  };
+};
+
+const updatePackageCategories = (projectFolder: string, output: PackageCategories): void => {
   const deployCategory = readJson(`${projectFolder}/package.json`).deployCategory as DeployCategory;
   if (deployCategory && (deployCategory === 'aws' || deployCategory === 'k8s')) {
-    return deployCategory;
+    output[deployCategory].push(projectFolder);
   }
 };
 

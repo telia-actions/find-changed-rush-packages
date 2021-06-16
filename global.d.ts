@@ -1,11 +1,11 @@
 type DeployCategory = 'aws' | 'k8s';
 
-interface ActionOutputs {
+interface PackageCategories {
   aws: string[];
   k8s: string[];
 }
 
-interface RushProjects {
+interface RushPackage {
   packageName: string;
   projectFolder: string;
 }
