@@ -13,6 +13,8 @@ outputs:
     description: Changed aws projects.
   k8s:
     description: Changed k8s projects.
+  tag:
+    description: Last deployed tag name.
 runs:
   using: node12
   main: dist/index.js
