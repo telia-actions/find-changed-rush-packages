@@ -6132,7 +6132,7 @@ function wrappy (fn, cb) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isChangeInPath = exports.getTagCommitSha = exports.isMainBranch = exports.getPullRequestNumber = void 0;
+exports.isChangeInPath = exports.getTagSHA = exports.isMainBranch = exports.getPullRequestNumber = void 0;
 const github_1 = __webpack_require__(438);
 const child_process_1 = __webpack_require__(129);
 const getPullRequestNumber = () => {
@@ -6144,10 +6144,10 @@ const isMainBranch = () => {
     return github_1.context.ref === 'refs/heads/main';
 };
 exports.isMainBranch = isMainBranch;
-const getTagCommitSha = (tagName) => {
+const getTagSHA = (tagName) => {
     return child_process_1.spawnSync('git', ['rev-list', '-n', '1', tagName]).stdout.toString().trim();
 };
-exports.getTagCommitSha = getTagCommitSha;
+exports.getTagSHA = getTagSHA;
 const isChangeInPath = (commitSha, path) => {
     return child_process_1.spawnSync('git', ['diff', '--quiet', commitSha, '--', path]).status ? true : false;
 };
@@ -6167,13 +6167,14 @@ const core_1 = __webpack_require__(186);
 const run = () => {
     try {
         const lastDeployedRef = utils_1.getLastDeployedRef(core_1.getInput('environment'));
-        const rushProjects = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
-        const outputs = lastDeployedRef
-            ? utils_1.getChangedPackages(lastDeployedRef, rushProjects)
-            : utils_1.getAllPackages(rushProjects);
-        for (const [key, value] of Object.entries(outputs)) {
-            core_1.setOutput(key, value);
+        const rushPackages = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
+        const packagesByCategory = lastDeployedRef.sha
+            ? utils_1.getChangedPackages(lastDeployedRef.sha, rushPackages)
+            : utils_1.getAllPackages(rushPackages);
+        for (const [category, packages] of Object.entries(packagesByCategory)) {
+            core_1.setOutput(category, packages);
         }
+        core_1.setOutput('tag', lastDeployedRef.tag);
     }
     catch (e) {
         core_1.setFailed(e.message);
@@ -6193,24 +6194,41 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getLastDeployedRef = exports.readJson = exports.getAllPackages = exports.getChangedPackages = void 0;
+exports.readJson = exports.getAllPackages = exports.getChangedPackages = exports.getLastDeployedRef = void 0;
 const fs_1 = __importDefault(__webpack_require__(747));
 const github_1 = __webpack_require__(978);
 const core_1 = __webpack_require__(186);
-const getChangedPackages = (lastDeployedRef, rushProjects) => {
-    return rushProjects.reduce((output, project) => {
-        if (github_1.isChangeInPath(lastDeployedRef, project.projectFolder)) {
-            updateOutput(project.projectFolder, output);
+const getLastDeployedRef = (environment) => {
+    const pullRequestNumber = github_1.getPullRequestNumber();
+    if (github_1.isMainBranch()) {
+        return { tag: `refs/tags/${environment}`, sha: github_1.getTagSHA(environment) };
+    }
+    else if (pullRequestNumber) {
+        core_1.debug(`Looking for tag with pull request number - "${pullRequestNumber}"`);
+        const refInFeatureBranch = github_1.getTagSHA(`preview-${pullRequestNumber}`);
+        if (refInFeatureBranch) {
+            return { tag: `refs/tags/preview-${pullRequestNumber}`, sha: refInFeatureBranch };
         }
-        return output;
-    }, getInitialOutput());
+        core_1.debug(`Tag in branch does not exists, using environment - "${environment}" `);
+        return { tag: `refs/tags/${environment}`, sha: github_1.getTagSHA(environment) };
+    }
+    throw new Error('This action only supports push event on main branch or pull request events');
+};
+exports.getLastDeployedRef = getLastDeployedRef;
+const getChangedPackages = (lastDeployedRef, rushPackages) => {
+    return rushPackages.reduce((categories, _package) => {
+        if (github_1.isChangeInPath(lastDeployedRef, _package.projectFolder)) {
+            updatePackageCategories(_package.projectFolder, categories);
+        }
+        return categories;
+    }, getInitialPackageCategories());
 };
 exports.getChangedPackages = getChangedPackages;
-const getAllPackages = (rushProjects) => {
-    return rushProjects.reduce((output, project) => {
-        updateOutput(project.projectFolder, output);
-        return output;
-    }, getInitialOutput());
+const getAllPackages = (rushPackages) => {
+    return rushPackages.reduce((categories, _package) => {
+        updatePackageCategories(_package.projectFolder, categories);
+        return categories;
+    }, getInitialPackageCategories());
 };
 exports.getAllPackages = getAllPackages;
 const readJson = (jsonPath) => {
@@ -6219,38 +6237,17 @@ const readJson = (jsonPath) => {
         .replace(/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g, (jsonKeyOrValue, comment) => comment ? '' : jsonKeyOrValue));
 };
 exports.readJson = readJson;
-const getLastDeployedRef = (environment) => {
-    const pullRequestNumber = github_1.getPullRequestNumber();
-    if (pullRequestNumber) {
-        core_1.debug(`Looking for tag with PR number - ${pullRequestNumber}`);
-        return getCommitShaForFeatureBranch(pullRequestNumber, environment);
-    }
-    else if (github_1.isMainBranch()) {
-        core_1.debug(`Push to main branch, looking for tag in main with environment - "${environment}"`);
-        return github_1.getTagCommitSha(environment);
-    }
-    throw new Error('This action only supports push event on main branch or pull request events');
-};
-exports.getLastDeployedRef = getLastDeployedRef;
-const getInitialOutput = () => {
+const getInitialPackageCategories = () => {
     return {
         aws: [],
         k8s: [],
     };
 };
-const updateOutput = (projectFolder, output) => {
+const updatePackageCategories = (projectFolder, output) => {
     const deployCategory = exports.readJson(`${projectFolder}/package.json`).deployCategory;
     if (deployCategory && (deployCategory === 'aws' || deployCategory === 'k8s')) {
         output[deployCategory].push(projectFolder);
     }
-};
-const getCommitShaForFeatureBranch = (pullRequestNumber, environment) => {
-    const commitShaInFeatureBranch = github_1.getTagCommitSha(`preview-${pullRequestNumber}`);
-    if (commitShaInFeatureBranch) {
-        return commitShaInFeatureBranch;
-    }
-    core_1.debug(`Tag in branch does not exist, looking for tag in main with environment - "${environment}"`);
-    return github_1.getTagCommitSha(environment);
 };
 
 
