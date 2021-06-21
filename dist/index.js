@@ -6132,7 +6132,7 @@ function wrappy (fn, cb) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isChangeInPath = exports.getTagSHA = exports.isMainBranch = exports.getPullRequestNumber = void 0;
+exports.isChangeInPath = exports.getTagSha = exports.isMainBranch = exports.getPullRequestNumber = void 0;
 const github_1 = __webpack_require__(438);
 const child_process_1 = __webpack_require__(129);
 const getPullRequestNumber = () => {
@@ -6144,10 +6144,10 @@ const isMainBranch = () => {
     return github_1.context.ref === 'refs/heads/main';
 };
 exports.isMainBranch = isMainBranch;
-const getTagSHA = (tagName) => {
+const getTagSha = (tagName) => {
     return child_process_1.spawnSync('git', ['rev-list', '-n', '1', tagName]).stdout.toString().trim();
 };
-exports.getTagSHA = getTagSHA;
+exports.getTagSha = getTagSha;
 const isChangeInPath = (commitSha, path) => {
     return child_process_1.spawnSync('git', ['diff', '--quiet', commitSha, '--', path]).status ? true : false;
 };
@@ -6166,15 +6166,17 @@ const utils_1 = __webpack_require__(314);
 const core_1 = __webpack_require__(186);
 const run = () => {
     try {
-        const lastDeployedRef = utils_1.getLastDeployedRef(core_1.getInput('environment'));
+        const environment = core_1.getInput('environment');
+        const tagForDeployment = utils_1.getTagForDeployment(environment);
+        const lastDeployedRef = utils_1.getLastDeployedRef(environment, tagForDeployment);
         const rushPackages = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
-        const packagesByCategory = lastDeployedRef.sha
-            ? utils_1.getChangedPackages(lastDeployedRef.sha, rushPackages)
+        const packagesByCategory = lastDeployedRef
+            ? utils_1.getChangedPackages(lastDeployedRef, rushPackages)
             : utils_1.getAllPackages(rushPackages);
         for (const [category, packages] of Object.entries(packagesByCategory)) {
             core_1.setOutput(category, packages);
         }
-        core_1.setOutput('tag', lastDeployedRef.tag);
+        core_1.setOutput('tag', tagForDeployment);
     }
     catch (e) {
         core_1.setFailed(e.message);
@@ -6194,25 +6196,31 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readJson = exports.getAllPackages = exports.getChangedPackages = exports.getLastDeployedRef = void 0;
+exports.readJson = exports.getAllPackages = exports.getChangedPackages = exports.getLastDeployedRef = exports.getTagForDeployment = void 0;
 const fs_1 = __importDefault(__webpack_require__(747));
 const github_1 = __webpack_require__(978);
 const core_1 = __webpack_require__(186);
-const getLastDeployedRef = (environment) => {
+const getTagForDeployment = (environment) => {
     const pullRequestNumber = github_1.getPullRequestNumber();
-    if (github_1.isMainBranch()) {
-        return { tag: `refs/tags/${environment}`, sha: github_1.getTagSHA(environment) };
+    if (pullRequestNumber) {
+        // debug(`Looking for tag with pull request number - "${pullRequestNumber}"`);
+        // debug(`Tag in branch does not exists, using environment - "${environment}" `);
+        return `preview-${pullRequestNumber}`;
     }
-    else if (pullRequestNumber) {
-        core_1.debug(`Looking for tag with pull request number - "${pullRequestNumber}"`);
-        const refInFeatureBranch = github_1.getTagSHA(`preview-${pullRequestNumber}`);
-        if (refInFeatureBranch) {
-            return { tag: `refs/tags/preview-${pullRequestNumber}`, sha: refInFeatureBranch };
-        }
-        core_1.debug(`Tag in branch does not exists, using environment - "${environment}" `);
-        return { tag: `refs/tags/${environment}`, sha: github_1.getTagSHA(environment) };
+    if (github_1.isMainBranch()) {
+        return environment;
     }
     throw new Error('This action only supports push event on main branch or pull request events');
+};
+exports.getTagForDeployment = getTagForDeployment;
+const getLastDeployedRef = (environment, tagName) => {
+    core_1.debug(`Looking for last deployed ref - "${tagName}"`);
+    const tagSha = github_1.getTagSha(tagName);
+    if (tagSha) {
+        return tagSha;
+    }
+    core_1.debug(`Tag was not found, deploy based on environment - "${environment}" `);
+    return github_1.getTagSha(environment);
 };
 exports.getLastDeployedRef = getLastDeployedRef;
 const getChangedPackages = (lastDeployedRef, rushPackages) => {

@@ -9,8 +9,3 @@ interface RushPackage {
   packageName: string;
   projectFolder: string;
 }
-
-interface TagRef {
-  tag: string;
-  sha: string;
-}

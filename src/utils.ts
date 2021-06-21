@@ -1,21 +1,26 @@
 import fs from 'fs';
-import { getPullRequestNumber, getTagSHA, isMainBranch, isChangeInPath } from './github';
+import { getPullRequestNumber, getTagSha, isMainBranch, isChangeInPath } from './github';
 import { debug } from '@actions/core';
 
-export const getLastDeployedRef = (environment: string): TagRef => {
+export const getTagForDeployment = (environment: string): string => {
   const pullRequestNumber = getPullRequestNumber();
+  if (pullRequestNumber) {
+    return `preview-${pullRequestNumber}`;
+  }
   if (isMainBranch()) {
-    return { tag: `refs/tags/${environment}`, sha: getTagSHA(environment) };
-  } else if (pullRequestNumber) {
-    debug(`Looking for tag with pull request number - "${pullRequestNumber}"`);
-    const refInFeatureBranch = getTagSHA(`preview-${pullRequestNumber}`);
-    if (refInFeatureBranch) {
-      return { tag: `refs/tags/preview-${pullRequestNumber}`, sha: refInFeatureBranch };
-    }
-    debug(`Tag in branch does not exists, using environment - "${environment}" `);
-    return { tag: `refs/tags/${environment}`, sha: getTagSHA(environment) };
+    return environment;
   }
   throw new Error('This action only supports push event on main branch or pull request events');
+};
+
+export const getLastDeployedRef = (environment: string, tagName: string): string => {
+  debug(`Looking for last deployed ref - "${tagName}"`);
+  const tagSha = getTagSha(tagName);
+  if (tagSha) {
+    return tagSha;
+  }
+  debug(`Tag was not found, deploy based on environment - "${environment}" `);
+  return getTagSha(environment);
 };
 
 export const getChangedPackages = (

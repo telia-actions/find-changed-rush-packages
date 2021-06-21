@@ -9,7 +9,7 @@ export const isMainBranch = (): boolean => {
   return context.ref === 'refs/heads/main';
 };
 
-export const getTagSHA = (tagName: string): string => {
+export const getTagSha = (tagName: string): string => {
   return spawnSync('git', ['rev-list', '-n', '1', tagName]).stdout.toString().trim();
 };
 
