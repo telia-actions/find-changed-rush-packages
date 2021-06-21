@@ -48,3 +48,5 @@ jobs:
         run: echo "AWS Projects - ${{ steps.test.outputs.aws }}"
       - name: Show K8S projects
         run: echo "K8S projects - ${{ steps.test.outputs.k8s }}"
+      - name: Show last deployed tag name
+        run: echo "Last deployed tag - ${{ steps.test.outputs.tag }}"

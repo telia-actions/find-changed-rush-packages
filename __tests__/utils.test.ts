@@ -1,4 +1,10 @@
-import { getAllPackages, getChangedPackages, getLastDeployedRef, readJson } from '../src/utils';
+import {
+  getAllPackages,
+  getChangedPackages,
+  getLastDeployedRef,
+  getTagForDeployment,
+  readJson,
+} from '../src/utils';
 import * as github from '../src/github';
 import mockedRushJson from '../__mocks__/rush';
 
@@ -7,6 +13,7 @@ jest.mock('@actions/core');
 const mockedCommitSha = 'mocksha';
 const mockedEnvironment = 'mockenv';
 const mockedPullRequestNumber = 1;
+const mockedTagName = 'preview-1';
 
 describe('Utilities', () => {
   describe('readRushJson method', () => {
@@ -22,56 +29,104 @@ describe('Utilities', () => {
       });
     });
   });
-  describe('getLastDeployedRef method', () => {
-    describe('given that pull request number exist', () => {
+  describe('getTagForDeployment method', () => {
+    describe('given that we are on the main branch', () => {
       beforeEach(() => {
-        jest.spyOn(github, 'getPullRequestNumber').mockReturnValueOnce(mockedPullRequestNumber);
+        jest.spyOn(github, 'isMainBranch').mockReturnValue(true);
+        jest.spyOn(github, 'getPullRequestNumber').mockReturnValue(0);
       });
-      describe('given that PR branch has deployment tag', () => {
-        it('should return sha of tagged commit', () => {
-          jest.spyOn(github, 'getPullRequestNumber').mockReturnValueOnce(mockedPullRequestNumber);
-          const spy = jest.spyOn(github, 'getTagCommitSha').mockReturnValueOnce(mockedCommitSha);
-          const commitSha = getLastDeployedRef(mockedEnvironment);
-          expect(commitSha).toBe(mockedCommitSha);
-          expect(spy).toHaveBeenCalledWith(`preview-${mockedPullRequestNumber}`);
-          expect(spy).toHaveBeenCalledTimes(1);
-        });
+      it('should return a tag matching the given environment name', () => {
+        const tagName = getTagForDeployment(mockedEnvironment);
+        expect(tagName).toBe(mockedEnvironment);
       });
-      describe('given that PR branch does not have deployment tag', () => {
-        it('should return sha of tagged commit from main branch', () => {
-          const spy = jest.spyOn(github, 'getTagCommitSha').mockImplementation((tag) => {
-            if (tag === mockedEnvironment) {
+    });
+    describe('given that we are in a branch which is part of a pull request', () => {
+      beforeEach(() => {
+        jest.spyOn(github, 'isMainBranch').mockReturnValue(false);
+        jest.spyOn(github, 'getPullRequestNumber').mockReturnValue(mockedPullRequestNumber);
+      });
+      it('should return a tag matching the current pull requests number', () => {
+        const tagName = getTagForDeployment(mockedEnvironment);
+        expect(tagName).toBe(`preview-${mockedPullRequestNumber}`);
+      });
+    });
+    describe('given that we are in a non-main branch with no related pull request', () => {
+      beforeEach(() => {
+        jest.spyOn(github, 'isMainBranch').mockReturnValue(false);
+        jest.spyOn(github, 'getPullRequestNumber').mockReturnValue(0);
+      });
+      it('should throw an error', () => {
+        expect(() => getTagForDeployment(mockedEnvironment)).toThrow();
+      });
+    });
+  });
+  describe('getLastDeployedRef method', () => {
+    describe('when we deploy a preview of a pull request', () => {
+      describe('given that it has been deployed before', () => {
+        beforeEach(() => {
+          jest.spyOn(github, 'getTagSha').mockImplementation((tagName) => {
+            if (tagName === mockedTagName) {
               return mockedCommitSha;
             }
             return '';
           });
-          const commitSha = getLastDeployedRef(mockedEnvironment);
-          expect(commitSha).toBe(mockedCommitSha);
-          expect(spy).toHaveBeenCalledWith(mockedEnvironment);
+        });
+        it('should return the SHA of the previously deployed commit', () => {
+          const deployedRef = getLastDeployedRef(mockedEnvironment, mockedTagName);
+          expect(deployedRef).toBe(mockedCommitSha);
+        });
+      });
+      describe('given that it has not been deployed before', () => {
+        describe('but is based on an environment that has been deployed', () => {
+          beforeEach(() => {
+            jest.spyOn(github, 'getTagSha').mockImplementation((tagName) => {
+              if (tagName === mockedTagName) {
+                return '';
+              } else if (tagName === mockedEnvironment) {
+                return mockedCommitSha;
+              }
+              return '';
+            });
+          });
+          it('should return the SHA of the commit that was deployed to that environment', () => {
+            const deployedRef = getLastDeployedRef(mockedEnvironment, mockedTagName);
+            expect(deployedRef).toBe(mockedCommitSha);
+          });
+        });
+        describe('and is based on an environment that has not been deployed either', () => {
+          beforeEach(() => {
+            jest.spyOn(github, 'getTagSha').mockReturnValue('');
+          });
+          it('should return an empty string', () => {
+            const deployedRef = getLastDeployedRef(mockedEnvironment, mockedTagName);
+            expect(deployedRef).toBe('');
+          });
         });
       });
     });
-    describe('given that pull request number does not exist and is on main branch', () => {
-      beforeEach(() => {
-        jest.spyOn(github, 'getPullRequestNumber').mockReturnValueOnce(0);
-        jest.spyOn(github, 'isMainBranch').mockReturnValueOnce(true);
+    describe('given that we are deploying the main branch to an environment', () => {
+      describe('given that this is the first deployment to the environment', () => {
+        beforeEach(() => {
+          jest.spyOn(github, 'getTagSha').mockReturnValue('');
+        });
+        it('should return an empty string', () => {
+          const deployedRef = getLastDeployedRef(mockedEnvironment, mockedEnvironment);
+          expect(deployedRef).toBe('');
+        });
       });
-      it('should return commit sha of environment', () => {
-        const spy = jest.spyOn(github, 'getTagCommitSha').mockReturnValueOnce(mockedCommitSha);
-        const commitSha = getLastDeployedRef(mockedEnvironment);
-        expect(commitSha).toBe(mockedCommitSha);
-        expect(spy).toHaveBeenNthCalledWith(1, mockedEnvironment);
-      });
-    });
-    describe('given that pull request number does not exist and is not on main branch', () => {
-      beforeEach(() => {
-        jest.spyOn(github, 'getPullRequestNumber').mockReturnValueOnce(0);
-        jest.spyOn(github, 'isMainBranch').mockReturnValueOnce(false);
-      });
-      it('should throw an error', () => {
-        expect(() => getLastDeployedRef(mockedEnvironment)).toThrowError(
-          'This action only supports push event on main branch or pull request events'
-        );
+      describe('given that there have been deployments to the environment already', () => {
+        beforeEach(() => {
+          jest.spyOn(github, 'getTagSha').mockImplementation((tagName) => {
+            if (tagName === mockedEnvironment) {
+              return mockedCommitSha;
+            }
+            return '';
+          });
+        });
+        it('should return the SHA of the commit that was deployed to that environment', () => {
+          const deployedRef = getLastDeployedRef(mockedEnvironment, mockedEnvironment);
+          expect(deployedRef).toBe(mockedCommitSha);
+        });
       });
     });
   });

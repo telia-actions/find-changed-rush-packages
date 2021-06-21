@@ -1,4 +1,4 @@
-import { getTagCommitSha, getPullRequestNumber, isMainBranch, isChangeInPath } from '../src/github';
+import { getTagSha, getPullRequestNumber, isMainBranch, isChangeInPath } from '../src/github';
 import { context } from '@actions/github';
 import child_process, { SpawnSyncReturns } from 'child_process';
 
@@ -37,12 +37,12 @@ describe('Github', () => {
       });
     });
   });
-  describe('getTagCommitSha method', () => {
+  describe('getTagSha method', () => {
     it('should call spawnSync with git rev-list command', () => {
       const spy = jest
         .spyOn(child_process, 'spawnSync')
         .mockReturnValueOnce({ stdout: Buffer.from(mockedCommitSha) } as SpawnSyncReturns<Buffer>);
-      const commitSha = getTagCommitSha(`preview-${mockedPullRequestNumber}`);
+      const commitSha = getTagSha(`preview-${mockedPullRequestNumber}`);
       expect(commitSha).toBe(mockedCommitSha);
       expect(spy).toHaveBeenCalledWith('git', [
         'rev-list',

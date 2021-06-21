@@ -1,6 +1,27 @@
 import fs from 'fs';
-import { getPullRequestNumber, getTagCommitSha, isMainBranch, isChangeInPath } from './github';
+import { getPullRequestNumber, getTagSha, isMainBranch, isChangeInPath } from './github';
 import { debug } from '@actions/core';
+
+export const getTagForDeployment = (environment: string): string => {
+  const pullRequestNumber = getPullRequestNumber();
+  if (pullRequestNumber) {
+    return `preview-${pullRequestNumber}`;
+  }
+  if (isMainBranch()) {
+    return environment;
+  }
+  throw new Error('This action only supports push event on main branch or pull request events');
+};
+
+export const getLastDeployedRef = (environment: string, tagName: string): string => {
+  debug(`Looking for last deployed ref - "${tagName}"`);
+  const tagSha = getTagSha(tagName);
+  if (tagSha) {
+    return tagSha;
+  }
+  debug(`Tag was not found, deploy based on environment - "${environment}" `);
+  return getTagSha(environment);
+};
 
 export const getChangedPackages = (
   lastDeployedRef: string,
@@ -31,18 +52,6 @@ export const readJson = (jsonPath: string): any => {
   );
 };
 
-export const getLastDeployedRef = (environment: string): string => {
-  const pullRequestNumber = getPullRequestNumber();
-  if (pullRequestNumber) {
-    debug(`Looking for tag with PR number - ${pullRequestNumber}`);
-    return getCommitShaForFeatureBranch(pullRequestNumber, environment);
-  } else if (isMainBranch()) {
-    debug(`Push to main branch, looking for tag in main with environment - "${environment}"`);
-    return getTagCommitSha(environment);
-  }
-  throw new Error('This action only supports push event on main branch or pull request events');
-};
-
 const getInitialPackageCategories = (): PackageCategories => {
   return {
     aws: [],
@@ -55,15 +64,4 @@ const updatePackageCategories = (projectFolder: string, output: PackageCategorie
   if (deployCategory && (deployCategory === 'aws' || deployCategory === 'k8s')) {
     output[deployCategory].push(projectFolder);
   }
-};
-
-const getCommitShaForFeatureBranch = (pullRequestNumber: number, environment: string): string => {
-  const commitShaInFeatureBranch = getTagCommitSha(`preview-${pullRequestNumber}`);
-  if (commitShaInFeatureBranch) {
-    return commitShaInFeatureBranch;
-  }
-  debug(
-    `Tag in branch does not exist, looking for tag in main with environment - "${environment}"`
-  );
-  return getTagCommitSha(environment);
 };
