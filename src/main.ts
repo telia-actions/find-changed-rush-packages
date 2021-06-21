@@ -5,12 +5,13 @@ const run = (): void => {
   try {
     const lastDeployedRef = getLastDeployedRef(getInput('environment'));
     const rushPackages: RushPackage[] = readJson(getInput('rushJsonPath')).projects;
-    const outputs = lastDeployedRef
-      ? getChangedPackages(lastDeployedRef, rushPackages)
+    const packagesByCategory = lastDeployedRef.sha
+      ? getChangedPackages(lastDeployedRef.sha, rushPackages)
       : getAllPackages(rushPackages);
-    for (const [key, value] of Object.entries(outputs)) {
-      setOutput(key, value);
+    for (const [category, packages] of Object.entries(packagesByCategory)) {
+      setOutput(category, packages);
     }
+    setOutput('tag', lastDeployedRef.tag);
   } catch (e) {
     setFailed(e.message);
   }

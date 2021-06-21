@@ -7,6 +7,12 @@ jest.mock('@actions/core');
 const mockedCommitSha = 'mocksha';
 const mockedEnvironment = 'mockenv';
 const mockedPullRequestNumber = 1;
+const mockedGetTagSHACallback = (tag: string): string => {
+  if (tag === mockedEnvironment) {
+    return mockedCommitSha;
+  }
+  return '';
+};
 
 describe('Utilities', () => {
   describe('readRushJson method', () => {
@@ -28,26 +34,42 @@ describe('Utilities', () => {
         jest.spyOn(github, 'getPullRequestNumber').mockReturnValueOnce(mockedPullRequestNumber);
       });
       describe('given that PR branch has deployment tag', () => {
-        it('should return sha of tagged commit', () => {
+        beforeEach(() => {
           jest.spyOn(github, 'getPullRequestNumber').mockReturnValueOnce(mockedPullRequestNumber);
-          const spy = jest.spyOn(github, 'getTagCommitSha').mockReturnValueOnce(mockedCommitSha);
-          const commitSha = getLastDeployedRef(mockedEnvironment);
-          expect(commitSha).toBe(mockedCommitSha);
+        });
+        it('should call getTagSHA with feature branch tag', () => {
+          const spy = jest.spyOn(github, 'getTagSHA').mockReturnValueOnce(mockedCommitSha);
+          getLastDeployedRef(mockedEnvironment);
           expect(spy).toHaveBeenCalledWith(`preview-${mockedPullRequestNumber}`);
           expect(spy).toHaveBeenCalledTimes(1);
         });
+        it('should return SHA of tag', () => {
+          jest.spyOn(github, 'getTagSHA').mockReturnValueOnce(mockedCommitSha);
+          const commitRef = getLastDeployedRef(mockedEnvironment);
+          expect(commitRef.sha).toBe(mockedCommitSha);
+        });
+        it('should return tag name in feature branch', () => {
+          jest.spyOn(github, 'getTagSHA').mockReturnValueOnce(mockedCommitSha);
+          const commitRef = getLastDeployedRef(mockedEnvironment);
+          expect(commitRef.tag).toBe(`refs/tags/preview-${mockedPullRequestNumber}`);
+        });
       });
       describe('given that PR branch does not have deployment tag', () => {
-        it('should return sha of tagged commit from main branch', () => {
-          const spy = jest.spyOn(github, 'getTagCommitSha').mockImplementation((tag) => {
-            if (tag === mockedEnvironment) {
-              return mockedCommitSha;
-            }
-            return '';
-          });
-          const commitSha = getLastDeployedRef(mockedEnvironment);
-          expect(commitSha).toBe(mockedCommitSha);
+        it('should call getTagSHA with environment tag', () => {
+          const spy = jest.spyOn(github, 'getTagSHA').mockImplementation(mockedGetTagSHACallback);
+          getLastDeployedRef(mockedEnvironment);
           expect(spy).toHaveBeenCalledWith(mockedEnvironment);
+          expect(spy).toHaveBeenCalledTimes(2);
+        });
+        it('should return sha of tagged commit from main branch', () => {
+          jest.spyOn(github, 'getTagSHA').mockImplementation(mockedGetTagSHACallback);
+          const commitRef = getLastDeployedRef(mockedEnvironment);
+          expect(commitRef.sha).toBe(mockedCommitSha);
+        });
+        it('should return sha of tagged commit from main branch', () => {
+          jest.spyOn(github, 'getTagSHA').mockImplementation(mockedGetTagSHACallback);
+          const commitRef = getLastDeployedRef(mockedEnvironment);
+          expect(commitRef.tag).toBe(`refs/tags/${mockedEnvironment}`);
         });
       });
     });
@@ -57,9 +79,9 @@ describe('Utilities', () => {
         jest.spyOn(github, 'isMainBranch').mockReturnValueOnce(true);
       });
       it('should return commit sha of environment', () => {
-        const spy = jest.spyOn(github, 'getTagCommitSha').mockReturnValueOnce(mockedCommitSha);
-        const commitSha = getLastDeployedRef(mockedEnvironment);
-        expect(commitSha).toBe(mockedCommitSha);
+        const spy = jest.spyOn(github, 'getTagSHA').mockReturnValueOnce(mockedCommitSha);
+        const commitRef = getLastDeployedRef(mockedEnvironment);
+        expect(commitRef.sha).toBe(mockedCommitSha);
         expect(spy).toHaveBeenNthCalledWith(1, mockedEnvironment);
       });
     });
