@@ -32,14 +32,14 @@ export const getChangedPackages = (
       updatePackageCategories(_package.projectFolder, categories);
     }
     return categories;
-  }, getInitialPackageCategories());
+  }, {});
 };
 
 export const getAllPackages = (rushPackages: RushPackage[]): PackageCategories => {
   return rushPackages.reduce<PackageCategories>((categories, _package) => {
     updatePackageCategories(_package.projectFolder, categories);
     return categories;
-  }, getInitialPackageCategories());
+  }, {});
 };
 
 export const readJson = (jsonPath: string): any => {
@@ -52,16 +52,12 @@ export const readJson = (jsonPath: string): any => {
   );
 };
 
-const getInitialPackageCategories = (): PackageCategories => {
-  return {
-    aws: [],
-    k8s: [],
-  };
-};
-
 const updatePackageCategories = (projectFolder: string, output: PackageCategories): void => {
   const deployCategory = readJson(`${projectFolder}/package.json`).deployCategory as DeployCategory;
-  if (deployCategory && (deployCategory === 'aws' || deployCategory === 'k8s')) {
+  if (deployCategory) {
+    if (!output[deployCategory]) {
+      output[deployCategory] = [];
+    }
     output[deployCategory].push(projectFolder);
   }
 };
