@@ -150,15 +150,13 @@ describe('Utilities', () => {
       beforeEach(() => {
         jest.spyOn(github, 'isChangeInPath').mockReturnValue(false);
       });
-      it('should not have foo project path in aws deploy category', () => {
+      it('should not have aws deploy category', () => {
         const deployCategories = getChangedPackages(mockedCommitSha, mockedRushJson.projects);
-        const fooProject = mockedRushJson.projects.find((project) => project.packageName === 'foo');
-        expect(deployCategories.aws).not.toContain(fooProject?.projectFolder);
+        expect(deployCategories.aws).toBe(undefined);
       });
-      it('should not have bar project path in k8s deploy category', () => {
+      it('should not have k8s deploy category', () => {
         const deployCategories = getChangedPackages(mockedCommitSha, mockedRushJson.projects);
-        const barProject = mockedRushJson.projects.find((project) => project.packageName === 'bar');
-        expect(deployCategories.k8s).not.toContain(barProject?.projectFolder);
+        expect(deployCategories.k8s).toBe(undefined);
       });
     });
   });

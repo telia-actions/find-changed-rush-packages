@@ -1,8 +1,7 @@
 type DeployCategory = 'aws' | 'k8s';
 
 interface PackageCategories {
-  aws: string[];
-  k8s: string[];
+  [key: string]: string[];
 }
 
 interface RushPackage {

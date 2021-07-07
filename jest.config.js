@@ -4,5 +4,5 @@ module.exports = {
   preset: 'jest-preset-typescript',
   testEnvironment: 'node',
   collectCoverage: true,
-  coverageReporters: ['text-summary'],
+  coverageReporters: ['text-summary', 'text'],
 };
