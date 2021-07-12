@@ -6203,8 +6203,6 @@ const core_1 = __webpack_require__(186);
 const getTagForDeployment = (environment) => {
     const pullRequestNumber = github_1.getPullRequestNumber();
     if (pullRequestNumber) {
-        // debug(`Looking for tag with pull request number - "${pullRequestNumber}"`);
-        // debug(`Tag in branch does not exists, using environment - "${environment}" `);
         return `preview-${pullRequestNumber}`;
     }
     if (github_1.isMainBranch()) {
@@ -6229,14 +6227,14 @@ const getChangedPackages = (lastDeployedRef, rushPackages) => {
             updatePackageCategories(_package.projectFolder, categories);
         }
         return categories;
-    }, getInitialPackageCategories());
+    }, {});
 };
 exports.getChangedPackages = getChangedPackages;
 const getAllPackages = (rushPackages) => {
     return rushPackages.reduce((categories, _package) => {
         updatePackageCategories(_package.projectFolder, categories);
         return categories;
-    }, getInitialPackageCategories());
+    }, {});
 };
 exports.getAllPackages = getAllPackages;
 const readJson = (jsonPath) => {
@@ -6245,15 +6243,12 @@ const readJson = (jsonPath) => {
         .replace(/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g, (jsonKeyOrValue, comment) => comment ? '' : jsonKeyOrValue));
 };
 exports.readJson = readJson;
-const getInitialPackageCategories = () => {
-    return {
-        aws: [],
-        k8s: [],
-    };
-};
 const updatePackageCategories = (projectFolder, output) => {
     const deployCategory = exports.readJson(`${projectFolder}/package.json`).deployCategory;
-    if (deployCategory && (deployCategory === 'aws' || deployCategory === 'k8s')) {
+    if (deployCategory) {
+        if (!output[deployCategory]) {
+            output[deployCategory] = [];
+        }
         output[deployCategory].push(projectFolder);
     }
 };
