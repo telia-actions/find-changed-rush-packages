@@ -6222,19 +6222,19 @@ const getLastDeployedRef = (environment, tagName) => {
 };
 exports.getLastDeployedRef = getLastDeployedRef;
 const getChangedPackages = (lastDeployedRef, rushPackages) => {
-    return rushPackages.reduce((categories, _package) => {
+    return rushPackages.reduce((changes, _package) => {
         if (github_1.isChangeInPath(lastDeployedRef, _package.projectFolder)) {
-            updatePackageCategories(_package.projectFolder, categories);
+            updatePackageCategories(_package.projectFolder, changes);
         }
-        return categories;
-    }, {});
+        return changes;
+    }, []);
 };
 exports.getChangedPackages = getChangedPackages;
 const getAllPackages = (rushPackages) => {
-    return rushPackages.reduce((categories, _package) => {
-        updatePackageCategories(_package.projectFolder, categories);
-        return categories;
-    }, {});
+    return rushPackages.reduce((changes, _package) => {
+        updatePackageCategories(_package.projectFolder, changes);
+        return changes;
+    }, []);
 };
 exports.getAllPackages = getAllPackages;
 const readJson = (jsonPath) => {
@@ -6244,13 +6244,7 @@ const readJson = (jsonPath) => {
 };
 exports.readJson = readJson;
 const updatePackageCategories = (projectFolder, output) => {
-    const deployCategory = exports.readJson(`${projectFolder}/package.json`).deployCategory;
-    if (deployCategory) {
-        if (!output[deployCategory]) {
-            output[deployCategory] = [];
-        }
-        output[deployCategory].push(projectFolder);
-    }
+    output.push(projectFolder);
 };
 
 
