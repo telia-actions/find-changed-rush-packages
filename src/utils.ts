@@ -26,18 +26,18 @@ export const getLastDeployedRef = (environment: string, tagName: string): string
 export const getChangedPackages = (
   lastDeployedRef: string,
   rushPackages: RushPackage[]
-): string[] => {
-  return rushPackages.reduce<string[]>((changes, _package) => {
+): RushPackage[] => {
+  return rushPackages.reduce<RushPackage[]>((changes, _package) => {
     if (isChangeInPath(lastDeployedRef, _package.projectFolder)) {
-      updatePackageCategories(_package.projectFolder, changes);
+      updatePackageCategories(_package, changes);
     }
     return changes;
   }, []);
 };
 
-export const getAllPackages = (rushPackages: RushPackage[]): string[] => {
-  return rushPackages.reduce<string[]>((changes, _package) => {
-    updatePackageCategories(_package.projectFolder, changes);
+export const getAllPackages = (rushPackages: RushPackage[]): RushPackage[] => {
+  return rushPackages.reduce<RushPackage[]>((changes, _package) => {
+    updatePackageCategories(_package, changes);
     return changes;
   }, []);
 };
@@ -52,6 +52,6 @@ export const readJson = (jsonPath: string): any => {
   );
 };
 
-const updatePackageCategories = (projectFolder: string, output: string[]): void => {
-  output.push(projectFolder);
+const updatePackageCategories = (project: RushPackage, output: RushPackage[]): void => {
+  output.push(project);
 };
