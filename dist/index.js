@@ -6170,9 +6170,11 @@ const run = () => {
         const tagForDeployment = utils_1.getTagForDeployment(environment);
         const lastDeployedRef = utils_1.getLastDeployedRef(environment, tagForDeployment);
         const rushPackages = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
+        core_1.debug(JSON.stringify(rushPackages, null, 2));
         const changedProjects = lastDeployedRef
             ? utils_1.getChangedPackages(lastDeployedRef, rushPackages)
             : utils_1.getAllPackages(rushPackages);
+        core_1.debug(JSON.stringify(changedProjects, null, 2));
         core_1.setOutput('changedProjects', changedProjects);
         core_1.setOutput('tag', tagForDeployment);
     }
@@ -6222,7 +6224,7 @@ exports.getLastDeployedRef = getLastDeployedRef;
 const getChangedPackages = (lastDeployedRef, rushPackages) => {
     return rushPackages.reduce((changes, _package) => {
         if (github_1.isChangeInPath(lastDeployedRef, _package.projectFolder)) {
-            updatePackageCategories(_package.projectFolder, changes);
+            updatePackageCategories(_package, changes);
         }
         return changes;
     }, []);
@@ -6230,7 +6232,7 @@ const getChangedPackages = (lastDeployedRef, rushPackages) => {
 exports.getChangedPackages = getChangedPackages;
 const getAllPackages = (rushPackages) => {
     return rushPackages.reduce((changes, _package) => {
-        updatePackageCategories(_package.projectFolder, changes);
+        updatePackageCategories(_package, changes);
         return changes;
     }, []);
 };
@@ -6241,8 +6243,8 @@ const readJson = (jsonPath) => {
         .replace(/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g, (jsonKeyOrValue, comment) => comment ? '' : jsonKeyOrValue));
 };
 exports.readJson = readJson;
-const updatePackageCategories = (projectFolder, output) => {
-    output.push(projectFolder);
+const updatePackageCategories = (project, output) => {
+    output.push(project);
 };
 
 
