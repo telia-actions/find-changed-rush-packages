@@ -136,14 +136,14 @@ describe('Utilities', () => {
         jest.spyOn(github, 'isChangeInPath').mockReturnValue(true);
       });
       it('should have foo project path in aws deploy category', () => {
-        const deployCategories = getChangedPackages(mockedCommitSha, mockedRushJson.projects);
+        const changedPackages = getChangedPackages(mockedCommitSha, mockedRushJson.projects);
         const fooProject = mockedRushJson.projects.find((project) => project.packageName === 'foo');
-        expect(deployCategories).toContain(fooProject?.projectFolder);
+        expect(changedPackages).toContain(fooProject);
       });
       it('should have bar project path in k8s deploy category', () => {
-        const deployCategories = getChangedPackages(mockedCommitSha, mockedRushJson.projects);
+        const changedPackages = getChangedPackages(mockedCommitSha, mockedRushJson.projects);
         const barProject = mockedRushJson.projects.find((project) => project.packageName === 'bar');
-        expect(deployCategories).toContain(barProject?.projectFolder);
+        expect(changedPackages).toContain(barProject);
       });
     });
     describe('given that changes does not exists in any package', () => {
@@ -158,14 +158,14 @@ describe('Utilities', () => {
   });
   describe('getAllPackages method', () => {
     it('should have foo project path in aws deploy category', () => {
-      const deployCategories = getAllPackages(mockedRushJson.projects);
+      const changedPackages = getAllPackages(mockedRushJson.projects);
       const fooProject = mockedRushJson.projects.find((project) => project.packageName === 'foo');
-      expect(deployCategories).toContain(fooProject?.projectFolder);
+      expect(changedPackages).toContain(fooProject);
     });
     it('should have bar project path in k8s deploy category', () => {
-      const deployCategories = getAllPackages(mockedRushJson.projects);
+      const changedPackages = getAllPackages(mockedRushJson.projects);
       const barProject = mockedRushJson.projects.find((project) => project.packageName === 'bar');
-      expect(deployCategories).toContain(barProject?.projectFolder);
+      expect(changedPackages).toContain(barProject);
     });
   });
 });
