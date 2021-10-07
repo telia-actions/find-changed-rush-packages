@@ -13,12 +13,11 @@ const run = (): void => {
     const tagForDeployment = getTagForDeployment(environment);
     const lastDeployedRef = getLastDeployedRef(environment, tagForDeployment);
     const rushPackages: RushPackage[] = readJson(getInput('rushJsonPath')).projects;
-    const packagesByCategory = lastDeployedRef
+    const changedProjects = lastDeployedRef
       ? getChangedPackages(lastDeployedRef, rushPackages)
       : getAllPackages(rushPackages);
-    for (const [category, packages] of Object.entries(packagesByCategory)) {
-      setOutput(category, packages);
-    }
+
+    setOutput('changedProjects', changedProjects);
     setOutput('tag', tagForDeployment);
   } catch (e) {
     setFailed(e.message);

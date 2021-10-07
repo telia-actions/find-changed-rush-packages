@@ -6170,12 +6170,10 @@ const run = () => {
         const tagForDeployment = utils_1.getTagForDeployment(environment);
         const lastDeployedRef = utils_1.getLastDeployedRef(environment, tagForDeployment);
         const rushPackages = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
-        const packagesByCategory = lastDeployedRef
+        const changedProjects = lastDeployedRef
             ? utils_1.getChangedPackages(lastDeployedRef, rushPackages)
             : utils_1.getAllPackages(rushPackages);
-        for (const [category, packages] of Object.entries(packagesByCategory)) {
-            core_1.setOutput(category, packages);
-        }
+        core_1.setOutput('changedProjects', changedProjects);
         core_1.setOutput('tag', tagForDeployment);
     }
     catch (e) {
