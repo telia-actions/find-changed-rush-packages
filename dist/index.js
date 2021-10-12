@@ -6170,12 +6170,12 @@ const run = () => {
         const tagForDeployment = utils_1.getTagForDeployment(environment);
         const lastDeployedRef = utils_1.getLastDeployedRef(environment, tagForDeployment);
         const rushPackages = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
-        const packagesByCategory = lastDeployedRef
+        core_1.debug(JSON.stringify(rushPackages, null, 2));
+        const changedProjects = lastDeployedRef
             ? utils_1.getChangedPackages(lastDeployedRef, rushPackages)
             : utils_1.getAllPackages(rushPackages);
-        for (const [category, packages] of Object.entries(packagesByCategory)) {
-            core_1.setOutput(category, packages);
-        }
+        core_1.debug(JSON.stringify(changedProjects, null, 2));
+        core_1.setOutput('changedProjects', changedProjects);
         core_1.setOutput('tag', tagForDeployment);
     }
     catch (e) {
@@ -6222,19 +6222,19 @@ const getLastDeployedRef = (environment, tagName) => {
 };
 exports.getLastDeployedRef = getLastDeployedRef;
 const getChangedPackages = (lastDeployedRef, rushPackages) => {
-    return rushPackages.reduce((categories, _package) => {
+    return rushPackages.reduce((changes, _package) => {
         if (github_1.isChangeInPath(lastDeployedRef, _package.projectFolder)) {
-            updatePackageCategories(_package.projectFolder, categories);
+            updatePackageCategories(_package, changes);
         }
-        return categories;
-    }, {});
+        return changes;
+    }, []);
 };
 exports.getChangedPackages = getChangedPackages;
 const getAllPackages = (rushPackages) => {
-    return rushPackages.reduce((categories, _package) => {
-        updatePackageCategories(_package.projectFolder, categories);
-        return categories;
-    }, {});
+    return rushPackages.reduce((changes, _package) => {
+        updatePackageCategories(_package, changes);
+        return changes;
+    }, []);
 };
 exports.getAllPackages = getAllPackages;
 const readJson = (jsonPath) => {
@@ -6243,14 +6243,8 @@ const readJson = (jsonPath) => {
         .replace(/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g, (jsonKeyOrValue, comment) => comment ? '' : jsonKeyOrValue));
 };
 exports.readJson = readJson;
-const updatePackageCategories = (projectFolder, output) => {
-    const deployCategory = exports.readJson(`${projectFolder}/package.json`).deployCategory;
-    if (deployCategory) {
-        if (!output[deployCategory]) {
-            output[deployCategory] = [];
-        }
-        output[deployCategory].push(projectFolder);
-    }
+const updatePackageCategories = (project, output) => {
+    output.push(project);
 };
 
 

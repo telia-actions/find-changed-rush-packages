@@ -9,8 +9,8 @@ inputs:
     description: Deployment environment.
     required: true
 outputs:
-  # This action sets dynamic outputs according to deployCategory value in package.json
-  # For example all packages with category "k8s" will be grouped in array under outputs.k8s
+  changedProjects:
+    description: List of changed project paths.
   tag:
     description: Last deployed tag name.
 runs:

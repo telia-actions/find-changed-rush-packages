@@ -26,20 +26,20 @@ export const getLastDeployedRef = (environment: string, tagName: string): string
 export const getChangedPackages = (
   lastDeployedRef: string,
   rushPackages: RushPackage[]
-): PackageCategories => {
-  return rushPackages.reduce<PackageCategories>((categories, _package) => {
+): RushPackage[] => {
+  return rushPackages.reduce<RushPackage[]>((changes, _package) => {
     if (isChangeInPath(lastDeployedRef, _package.projectFolder)) {
-      updatePackageCategories(_package.projectFolder, categories);
+      updatePackageCategories(_package, changes);
     }
-    return categories;
-  }, {});
+    return changes;
+  }, []);
 };
 
-export const getAllPackages = (rushPackages: RushPackage[]): PackageCategories => {
-  return rushPackages.reduce<PackageCategories>((categories, _package) => {
-    updatePackageCategories(_package.projectFolder, categories);
-    return categories;
-  }, {});
+export const getAllPackages = (rushPackages: RushPackage[]): RushPackage[] => {
+  return rushPackages.reduce<RushPackage[]>((changes, _package) => {
+    updatePackageCategories(_package, changes);
+    return changes;
+  }, []);
 };
 
 export const readJson = (jsonPath: string): any => {
@@ -52,12 +52,6 @@ export const readJson = (jsonPath: string): any => {
   );
 };
 
-const updatePackageCategories = (projectFolder: string, output: PackageCategories): void => {
-  const deployCategory = readJson(`${projectFolder}/package.json`).deployCategory as DeployCategory;
-  if (deployCategory) {
-    if (!output[deployCategory]) {
-      output[deployCategory] = [];
-    }
-    output[deployCategory].push(projectFolder);
-  }
+const updatePackageCategories = (project: RushPackage, output: RushPackage[]): void => {
+  output.push(project);
 };
