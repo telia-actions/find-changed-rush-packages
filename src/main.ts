@@ -1,28 +1,46 @@
-import {
-  getAllPackages,
-  getChangedPackages,
-  getLastDeployedRef,
-  getTagForDeployment,
-  readJson,
-} from './utils';
-import { setOutput, setFailed, getInput, debug } from '@actions/core';
+import { RushConfiguration, ProjectChangeAnalyzer } from '@microsoft/rush-lib';
+import { Terminal, ConsoleTerminalProvider } from '@rushstack/node-core-library';
+import { info, setOutput, setFailed, getInput } from '@actions/core';
+import { getTagForDeployment } from './utils';
 
-const run = (): void => {
+const run = async (): Promise<void> => {
   try {
     const environment = getInput('environment');
     const tagForDeployment = getTagForDeployment(environment);
-    const lastDeployedRef = getLastDeployedRef(environment, tagForDeployment);
-    const rushPackages: RushPackage[] = readJson(getInput('rushJsonPath')).projects;
 
-    debug(JSON.stringify(rushPackages, null, 2));
+    info('Using bundle analyzer');
 
-    const changedProjects = lastDeployedRef
-      ? getChangedPackages(lastDeployedRef, rushPackages)
-      : getAllPackages(rushPackages);
+    const rushConfiguration = RushConfiguration.loadFromDefaultLocation({
+      startingFolder: process.cwd(),
+    });
 
-    debug(JSON.stringify(changedProjects, null, 2));
+    const terminalProvider = new ConsoleTerminalProvider();
 
-    setOutput('changedProjects', changedProjects);
+    const terminal = new Terminal(terminalProvider);
+
+    const projectChangeAnalyzer = new ProjectChangeAnalyzer(rushConfiguration);
+
+    const changedProjects = await projectChangeAnalyzer.getChangedProjectsAsync({
+      targetBranchName: rushConfiguration.repositoryDefaultBranch,
+      terminal,
+    });
+
+    const projectMap = new Map();
+
+    for await (const changedProject of changedProjects) {
+      for (const consumer of changedProject.consumingProjects) {
+        projectMap.set(consumer.packageName, {
+          packageName: consumer.packageName,
+          projectFolder: consumer.projectFolder,
+          reviewCategory: consumer.reviewCategory,
+          shouldPublish: consumer.shouldPublish,
+        });
+      }
+    }
+
+    const result = projectMap.values();
+
+    setOutput('changedProjects', result);
     setOutput('tag', tagForDeployment);
   } catch (e) {
     setFailed(e.message);
