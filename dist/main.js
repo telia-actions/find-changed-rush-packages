@@ -40,13 +40,9 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
         try {
             for (var changedProjects_1 = __asyncValues(changedProjects), changedProjects_1_1; changedProjects_1_1 = yield changedProjects_1.next(), !changedProjects_1_1.done;) {
                 const changedProject = changedProjects_1_1.value;
+                projectMap.set(changedProject.packageName, changedProject);
                 for (const consumer of changedProject.consumingProjects) {
-                    projectMap.set(consumer.packageName, {
-                        packageName: consumer.packageName,
-                        projectFolder: consumer.projectFolder,
-                        reviewCategory: consumer.reviewCategory,
-                        shouldPublish: consumer.shouldPublish,
-                    });
+                    projectMap.set(consumer.packageName, consumer);
                 }
             }
         }
@@ -57,10 +53,13 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
             }
             finally { if (e_1) throw e_1.error; }
         }
-        const result = projectMap.values();
-        // eslint-disable-next-line no-console
-        console.log(result);
-        core_1.setOutput('changedProjects', Array.from(result));
+        const result = Array.from(projectMap.values(), ({ packageName, projectFolder, reviewCategory, shouldPublish }) => ({
+            packageName,
+            projectFolder,
+            reviewCategory,
+            shouldPublish,
+        }));
+        core_1.setOutput('changedProjects', result);
         core_1.setOutput('tag', tagForDeployment);
     }
     catch (e) {

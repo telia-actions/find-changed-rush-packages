@@ -28,22 +28,24 @@ const run = async (): Promise<void> => {
     const projectMap = new Map();
 
     for await (const changedProject of changedProjects) {
+      projectMap.set(changedProject.packageName, changedProject);
+
       for (const consumer of changedProject.consumingProjects) {
-        projectMap.set(consumer.packageName, {
-          packageName: consumer.packageName,
-          projectFolder: consumer.projectFolder,
-          reviewCategory: consumer.reviewCategory,
-          shouldPublish: consumer.shouldPublish,
-        });
+        projectMap.set(consumer.packageName, consumer);
       }
     }
 
-    const result = projectMap.values();
+    const result = Array.from(
+      projectMap.values(),
+      ({ packageName, projectFolder, reviewCategory, shouldPublish }) => ({
+        packageName,
+        projectFolder,
+        reviewCategory,
+        shouldPublish,
+      })
+    );
 
-    // eslint-disable-next-line no-console
-    console.log(result);
-
-    setOutput('changedProjects', Array.from(result));
+    setOutput('changedProjects', result);
     setOutput('tag', tagForDeployment);
   } catch (e) {
     setFailed(e.message);
