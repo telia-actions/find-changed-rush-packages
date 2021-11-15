@@ -1,24 +1,18 @@
-import {
-  getAllPackages,
-  getChangedPackages,
-  getLastDeployedRef,
-  getTagForDeployment,
-  readJson,
-} from './utils';
+import { getChangedPackages, getLastDeployedRef, getTagForDeployment, readJson } from './utils';
 import { setOutput, setFailed, getInput, debug } from '@actions/core';
 
 const run = (): void => {
   try {
     const environment = getInput('environment');
+    const rushJsonPath = getInput('rushJsonPath');
+
     const tagForDeployment = getTagForDeployment(environment);
-    const lastDeployedRef = getLastDeployedRef(environment, tagForDeployment);
-    const rushPackages: RushPackage[] = readJson(getInput('rushJsonPath')).projects;
+    const lastDeployedRef = getLastDeployedRef(tagForDeployment);
+    const rushPackages: RushPackage[] = readJson(rushJsonPath).projects;
 
     debug(JSON.stringify(rushPackages, null, 2));
 
-    const changedProjects = lastDeployedRef
-      ? getChangedPackages(lastDeployedRef, rushPackages)
-      : getAllPackages(rushPackages);
+    const changedProjects = getChangedPackages(lastDeployedRef, rushPackages);
 
     debug(JSON.stringify(changedProjects, null, 2));
 

@@ -6148,8 +6148,8 @@ const getTagSha = (tagName) => {
     return child_process_1.spawnSync('git', ['rev-list', '-n', '1', tagName]).stdout.toString().trim();
 };
 exports.getTagSha = getTagSha;
-const isChangeInPath = (commitSha, path) => {
-    return child_process_1.spawnSync('git', ['diff', '--quiet', commitSha, '--', path]).status ? true : false;
+const isChangeInPath = (target, path) => {
+    return Boolean(child_process_1.spawnSync('git', ['diff', '--quiet', `${target}...`, '--', path]).status);
 };
 exports.isChangeInPath = isChangeInPath;
 
@@ -6157,23 +6157,26 @@ exports.isChangeInPath = isChangeInPath;
 /***/ }),
 
 /***/ 399:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const utils_1 = __webpack_require__(314);
 const core_1 = __webpack_require__(186);
+const path_1 = __importDefault(__webpack_require__(622));
 const run = () => {
     try {
-        const environment = core_1.getInput('environment');
+        const environment = core_1.getInput('environment') || 'blah';
+        const rushJsonPath = core_1.getInput('rushJsonPath') || path_1.default.resolve('../rush.json');
         const tagForDeployment = utils_1.getTagForDeployment(environment);
-        const lastDeployedRef = utils_1.getLastDeployedRef(environment, tagForDeployment);
-        const rushPackages = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
+        const lastDeployedRef = utils_1.getLastDeployedRef(tagForDeployment);
+        const rushPackages = utils_1.readJson(rushJsonPath).projects;
         core_1.debug(JSON.stringify(rushPackages, null, 2));
-        const changedProjects = lastDeployedRef
-            ? utils_1.getChangedPackages(lastDeployedRef, rushPackages)
-            : utils_1.getAllPackages(rushPackages);
+        const changedProjects = utils_1.getChangedPackages(lastDeployedRef, rushPackages);
         core_1.debug(JSON.stringify(changedProjects, null, 2));
         core_1.setOutput('changedProjects', changedProjects);
         core_1.setOutput('tag', tagForDeployment);
@@ -6196,7 +6199,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readJson = exports.getAllPackages = exports.getChangedPackages = exports.getLastDeployedRef = exports.getTagForDeployment = void 0;
+exports.readJson = exports.getChangedPackages = exports.getLastDeployedRef = exports.getTagForDeployment = void 0;
 const fs_1 = __importDefault(__webpack_require__(747));
 const github_1 = __webpack_require__(978);
 const core_1 = __webpack_require__(186);
@@ -6208,17 +6211,13 @@ const getTagForDeployment = (environment) => {
     if (github_1.isMainBranch()) {
         return environment;
     }
-    throw new Error('This action only supports push event on main branch or pull request events');
+    return environment;
 };
 exports.getTagForDeployment = getTagForDeployment;
-const getLastDeployedRef = (environment, tagName) => {
+const getLastDeployedRef = (tagName) => {
     core_1.debug(`Looking for last deployed ref - "${tagName}"`);
     const tagSha = github_1.getTagSha(tagName);
-    if (tagSha) {
-        return tagSha;
-    }
-    core_1.debug(`Tag was not found, deploy based on environment - "${environment}" `);
-    return github_1.getTagSha(environment);
+    return tagSha ? tagName : 'main';
 };
 exports.getLastDeployedRef = getLastDeployedRef;
 const getChangedPackages = (lastDeployedRef, rushPackages) => {
@@ -6230,13 +6229,6 @@ const getChangedPackages = (lastDeployedRef, rushPackages) => {
     }, []);
 };
 exports.getChangedPackages = getChangedPackages;
-const getAllPackages = (rushPackages) => {
-    return rushPackages.reduce((changes, _package) => {
-        updatePackageCategories(_package, changes);
-        return changes;
-    }, []);
-};
-exports.getAllPackages = getAllPackages;
 const readJson = (jsonPath) => {
     return JSON.parse(fs_1.default
         .readFileSync(jsonPath, 'utf-8')

@@ -13,6 +13,6 @@ export const getTagSha = (tagName: string): string => {
   return spawnSync('git', ['rev-list', '-n', '1', tagName]).stdout.toString().trim();
 };
 
-export const isChangeInPath = (commitSha: string, path: string): boolean => {
-  return spawnSync('git', ['diff', '--quiet', commitSha, '--', path]).status ? true : false;
+export const isChangeInPath = (target: string, path: string): boolean => {
+  return Boolean(spawnSync('git', ['diff', '--quiet', `${target}...`, '--', path]).status);
 };

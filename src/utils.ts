@@ -10,17 +10,15 @@ export const getTagForDeployment = (environment: string): string => {
   if (isMainBranch()) {
     return environment;
   }
-  throw new Error('This action only supports push event on main branch or pull request events');
+
+  return environment;
 };
 
-export const getLastDeployedRef = (environment: string, tagName: string): string => {
+export const getLastDeployedRef = (tagName: string): string => {
   debug(`Looking for last deployed ref - "${tagName}"`);
   const tagSha = getTagSha(tagName);
-  if (tagSha) {
-    return tagSha;
-  }
-  debug(`Tag was not found, deploy based on environment - "${environment}" `);
-  return getTagSha(environment);
+
+  return tagSha ? tagName : 'main';
 };
 
 export const getChangedPackages = (
@@ -31,13 +29,6 @@ export const getChangedPackages = (
     if (isChangeInPath(lastDeployedRef, _package.projectFolder)) {
       updatePackageCategories(_package, changes);
     }
-    return changes;
-  }, []);
-};
-
-export const getAllPackages = (rushPackages: RushPackage[]): RushPackage[] => {
-  return rushPackages.reduce<RushPackage[]>((changes, _package) => {
-    updatePackageCategories(_package, changes);
     return changes;
   }, []);
 };
