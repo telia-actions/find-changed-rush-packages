@@ -6172,9 +6172,9 @@ const run = () => {
         const tagForDeployment = utils_1.getTagForDeployment(environment);
         const lastDeployedRef = utils_1.getLastDeployedRef(tagForDeployment);
         const rushPackages = utils_1.readJson(rushJsonPath).projects;
-        core_1.debug(JSON.stringify(rushPackages, null, 2));
+        core_1.info(JSON.stringify(rushPackages, null, 2));
         const changedProjects = utils_1.getChangedPackages(lastDeployedRef, rushPackages);
-        core_1.debug(JSON.stringify(changedProjects, null, 2));
+        core_1.info(JSON.stringify(changedProjects, null, 2));
         core_1.setOutput('changedProjects', changedProjects);
         core_1.setOutput('tag', tagForDeployment);
     }
