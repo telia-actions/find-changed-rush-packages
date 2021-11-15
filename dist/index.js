@@ -6157,21 +6157,18 @@ exports.isChangeInPath = isChangeInPath;
 /***/ }),
 
 /***/ 399:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const utils_1 = __webpack_require__(314);
 const core_1 = __webpack_require__(186);
-const path_1 = __importDefault(__webpack_require__(622));
 const run = () => {
     try {
-        const environment = core_1.getInput('environment') || 'blah';
-        const rushJsonPath = core_1.getInput('rushJsonPath') || path_1.default.resolve('../rush.json');
+        const environment = core_1.getInput('environment');
+        const rushJsonPath = core_1.getInput('rushJsonPath');
+        core_1.info('Merge base testing');
         const tagForDeployment = utils_1.getTagForDeployment(environment);
         const lastDeployedRef = utils_1.getLastDeployedRef(tagForDeployment);
         const rushPackages = utils_1.readJson(rushJsonPath).projects;

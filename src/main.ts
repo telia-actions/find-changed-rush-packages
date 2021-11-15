@@ -1,10 +1,12 @@
 import { getChangedPackages, getLastDeployedRef, getTagForDeployment, readJson } from './utils';
-import { setOutput, setFailed, getInput, debug } from '@actions/core';
+import { info, setOutput, setFailed, getInput, debug } from '@actions/core';
 
 const run = (): void => {
   try {
     const environment = getInput('environment');
     const rushJsonPath = getInput('rushJsonPath');
+
+    info('Merge base testing');
 
     const tagForDeployment = getTagForDeployment(environment);
     const lastDeployedRef = getLastDeployedRef(tagForDeployment);
