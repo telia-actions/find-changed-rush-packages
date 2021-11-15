@@ -40,7 +40,10 @@ const run = async (): Promise<void> => {
 
     const result = projectMap.values();
 
-    setOutput('changedProjects', result);
+    // eslint-disable-next-line no-console
+    console.log(result);
+
+    setOutput('changedProjects', Array.from(result));
     setOutput('tag', tagForDeployment);
   } catch (e) {
     setFailed(e.message);
