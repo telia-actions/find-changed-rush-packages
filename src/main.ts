@@ -1,20 +1,37 @@
-import { getChangedPackages, getLastDeployedRef, getTagForDeployment, readJson } from './utils';
-import { info, setOutput, setFailed, getInput } from '@actions/core';
+import {
+  getAllPackages,
+  getChangedPackages,
+  getDiffTargetMain,
+  getDiffTargetPullRequest,
+  getTagForDeployment,
+  readJson,
+} from './utils';
+import { debug, getInput, info, setFailed, setOutput } from '@actions/core';
+import { getPullRequestNumber, isMainBranch } from './github';
 
 const run = (): void => {
   try {
     const environment = getInput('environment');
     const rushJsonPath = getInput('rushJsonPath');
 
-    info('Merge base testing');
+    const pullRequestNumber = getPullRequestNumber();
+    const isMain = isMainBranch();
 
-    const tagForDeployment = getTagForDeployment(environment);
-    const lastDeployedRef = getLastDeployedRef(tagForDeployment);
+    if (!pullRequestNumber && !isMain) {
+      throw new Error('This action only supports push event on main branch or pull request events');
+    }
+
+    const tagForDeployment = getTagForDeployment(pullRequestNumber, environment);
+    const diffTarget = isMain
+      ? getDiffTargetMain(tagForDeployment)
+      : getDiffTargetPullRequest(tagForDeployment);
     const rushPackages: RushPackage[] = readJson(rushJsonPath).projects;
 
-    info(JSON.stringify(rushPackages, null, 2));
+    debug(JSON.stringify(rushPackages, null, 2));
 
-    const changedProjects = getChangedPackages(lastDeployedRef, rushPackages);
+    const changedProjects = diffTarget
+      ? getChangedPackages(diffTarget, rushPackages)
+      : getAllPackages(rushPackages);
 
     info(JSON.stringify(changedProjects, null, 2));
 

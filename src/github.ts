@@ -14,5 +14,15 @@ export const getTagSha = (tagName: string): string => {
 };
 
 export const isChangeInPath = (target: string, path: string): boolean => {
-  return Boolean(spawnSync('git', ['diff', '--quiet', `${target}...`, '--', path]).status);
+  const { status } = spawnSync('git', ['diff', '--quiet', `${target}...`, '--', path]);
+
+  if (status === 1) {
+    return true;
+  }
+
+  if (status === 0) {
+    return false;
+  }
+
+  throw new Error(`Git returned a non-success code for path: ${path}`);
 };
