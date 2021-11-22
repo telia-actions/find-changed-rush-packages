@@ -1,7 +1,8 @@
 import {
   getAllPackages,
   getChangedPackages,
-  getLastDeployedRef,
+  getDiffTargetMain,
+  getDiffTargetPullRequest,
   getTagForDeployment,
   readJson,
 } from '../src/utils';
@@ -31,102 +32,65 @@ describe('Utilities', () => {
   });
   describe('getTagForDeployment method', () => {
     describe('given that we are on the main branch', () => {
-      beforeEach(() => {
-        jest.spyOn(github, 'isMainBranch').mockReturnValue(true);
-        jest.spyOn(github, 'getPullRequestNumber').mockReturnValue(0);
-      });
       it('should return a tag matching the given environment name', () => {
-        const tagName = getTagForDeployment(mockedEnvironment);
+        const tagName = getTagForDeployment(0, mockedEnvironment);
         expect(tagName).toBe(mockedEnvironment);
       });
     });
     describe('given that we are in a branch which is part of a pull request', () => {
-      beforeEach(() => {
-        jest.spyOn(github, 'isMainBranch').mockReturnValue(false);
-        jest.spyOn(github, 'getPullRequestNumber').mockReturnValue(mockedPullRequestNumber);
-      });
       it('should return a tag matching the current pull requests number', () => {
-        const tagName = getTagForDeployment(mockedEnvironment);
+        const tagName = getTagForDeployment(mockedPullRequestNumber, mockedEnvironment);
         expect(tagName).toBe(`preview-${mockedPullRequestNumber}`);
       });
     });
-    describe('given that we are in a non-main branch with no related pull request', () => {
-      beforeEach(() => {
-        jest.spyOn(github, 'isMainBranch').mockReturnValue(false);
-        jest.spyOn(github, 'getPullRequestNumber').mockReturnValue(0);
+  });
+  describe('getDiffTargetPullRequest method', () => {
+    describe('given tag exists', () => {
+      it('should return a tag', () => {
+        const getTagShaSpy = jest.spyOn(github, 'getTagSha').mockReturnValue(mockedCommitSha);
+        const diffTarget = getDiffTargetPullRequest(mockedTagName);
+
+        expect(getTagShaSpy).toHaveBeenCalledTimes(1);
+        expect(getTagShaSpy).toHaveBeenCalledWith(mockedTagName);
+
+        expect(diffTarget).toBe(mockedTagName);
       });
-      it('should throw an error', () => {
-        expect(() => getTagForDeployment(mockedEnvironment)).toThrow();
+    });
+    describe(`given tag doesn't exist`, () => {
+      it('should return main branch fallback', () => {
+        const getTagShaSpy = jest.spyOn(github, 'getTagSha').mockReturnValue('');
+
+        const diffTarget = getDiffTargetPullRequest(mockedTagName);
+
+        expect(getTagShaSpy).toHaveBeenCalledTimes(1);
+        expect(getTagShaSpy).toHaveBeenCalledWith(mockedTagName);
+
+        expect(diffTarget).toBe('origin/main');
       });
     });
   });
-  describe('getLastDeployedRef method', () => {
-    describe('when we deploy a preview of a pull request', () => {
-      describe('given that it has been deployed before', () => {
-        beforeEach(() => {
-          jest.spyOn(github, 'getTagSha').mockImplementation((tagName) => {
-            if (tagName === mockedTagName) {
-              return mockedCommitSha;
-            }
-            return '';
-          });
-        });
-        it('should return the SHA of the previously deployed commit', () => {
-          const deployedRef = getLastDeployedRef(mockedEnvironment, mockedTagName);
-          expect(deployedRef).toBe(mockedCommitSha);
-        });
-      });
-      describe('given that it has not been deployed before', () => {
-        describe('but is based on an environment that has been deployed', () => {
-          beforeEach(() => {
-            jest.spyOn(github, 'getTagSha').mockImplementation((tagName) => {
-              if (tagName === mockedTagName) {
-                return '';
-              } else if (tagName === mockedEnvironment) {
-                return mockedCommitSha;
-              }
-              return '';
-            });
-          });
-          it('should return the SHA of the commit that was deployed to that environment', () => {
-            const deployedRef = getLastDeployedRef(mockedEnvironment, mockedTagName);
-            expect(deployedRef).toBe(mockedCommitSha);
-          });
-        });
-        describe('and is based on an environment that has not been deployed either', () => {
-          beforeEach(() => {
-            jest.spyOn(github, 'getTagSha').mockReturnValue('');
-          });
-          it('should return an empty string', () => {
-            const deployedRef = getLastDeployedRef(mockedEnvironment, mockedTagName);
-            expect(deployedRef).toBe('');
-          });
-        });
+  describe('getDiffTargetMain method', () => {
+    describe('given tag exists', () => {
+      it('should return a tag', () => {
+        const getTagShaSpy = jest.spyOn(github, 'getTagSha').mockReturnValue(mockedCommitSha);
+        const diffTarget = getDiffTargetMain(mockedTagName);
+
+        expect(getTagShaSpy).toHaveBeenCalledTimes(1);
+        expect(getTagShaSpy).toHaveBeenCalledWith(mockedTagName);
+
+        expect(diffTarget).toBe(mockedTagName);
       });
     });
-    describe('given that we are deploying the main branch to an environment', () => {
-      describe('given that this is the first deployment to the environment', () => {
-        beforeEach(() => {
-          jest.spyOn(github, 'getTagSha').mockReturnValue('');
-        });
-        it('should return an empty string', () => {
-          const deployedRef = getLastDeployedRef(mockedEnvironment, mockedEnvironment);
-          expect(deployedRef).toBe('');
-        });
-      });
-      describe('given that there have been deployments to the environment already', () => {
-        beforeEach(() => {
-          jest.spyOn(github, 'getTagSha').mockImplementation((tagName) => {
-            if (tagName === mockedEnvironment) {
-              return mockedCommitSha;
-            }
-            return '';
-          });
-        });
-        it('should return the SHA of the commit that was deployed to that environment', () => {
-          const deployedRef = getLastDeployedRef(mockedEnvironment, mockedEnvironment);
-          expect(deployedRef).toBe(mockedCommitSha);
-        });
+    describe(`given tag doesn't exist`, () => {
+      it('should return null', () => {
+        const getTagShaSpy = jest.spyOn(github, 'getTagSha').mockReturnValue('');
+
+        const diffTarget = getDiffTargetMain(mockedTagName);
+
+        expect(getTagShaSpy).toHaveBeenCalledTimes(1);
+        expect(getTagShaSpy).toHaveBeenCalledWith(mockedTagName);
+
+        expect(diffTarget).toBe(null);
       });
     });
   });

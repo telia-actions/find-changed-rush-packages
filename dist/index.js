@@ -6148,8 +6148,15 @@ const getTagSha = (tagName) => {
     return child_process_1.spawnSync('git', ['rev-list', '-n', '1', tagName]).stdout.toString().trim();
 };
 exports.getTagSha = getTagSha;
-const isChangeInPath = (commitSha, path) => {
-    return child_process_1.spawnSync('git', ['diff', '--quiet', commitSha, '--', path]).status ? true : false;
+const isChangeInPath = (target, path) => {
+    const { status } = child_process_1.spawnSync('git', ['diff', '--quiet', `${target}...`, '--', path]);
+    if (status === 1) {
+        return true;
+    }
+    if (status === 0) {
+        return false;
+    }
+    throw new Error(`Git returned a non-success code for path: ${path}`);
 };
 exports.isChangeInPath = isChangeInPath;
 
@@ -6164,17 +6171,26 @@ exports.isChangeInPath = isChangeInPath;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const utils_1 = __webpack_require__(314);
 const core_1 = __webpack_require__(186);
+const github_1 = __webpack_require__(978);
 const run = () => {
     try {
         const environment = core_1.getInput('environment');
-        const tagForDeployment = utils_1.getTagForDeployment(environment);
-        const lastDeployedRef = utils_1.getLastDeployedRef(environment, tagForDeployment);
-        const rushPackages = utils_1.readJson(core_1.getInput('rushJsonPath')).projects;
+        const rushJsonPath = core_1.getInput('rushJsonPath');
+        const pullRequestNumber = github_1.getPullRequestNumber();
+        const isMain = github_1.isMainBranch();
+        if (!pullRequestNumber && !isMain) {
+            throw new Error('This action only supports push event on main branch or pull request events');
+        }
+        const tagForDeployment = utils_1.getTagForDeployment(pullRequestNumber, environment);
+        const diffTarget = isMain
+            ? utils_1.getDiffTargetMain(tagForDeployment)
+            : utils_1.getDiffTargetPullRequest(tagForDeployment);
+        const rushPackages = utils_1.readJson(rushJsonPath).projects;
         core_1.debug(JSON.stringify(rushPackages, null, 2));
-        const changedProjects = lastDeployedRef
-            ? utils_1.getChangedPackages(lastDeployedRef, rushPackages)
+        const changedProjects = diffTarget
+            ? utils_1.getChangedPackages(diffTarget, rushPackages)
             : utils_1.getAllPackages(rushPackages);
-        core_1.debug(JSON.stringify(changedProjects, null, 2));
+        core_1.info(JSON.stringify(changedProjects, null, 2));
         core_1.setOutput('changedProjects', changedProjects);
         core_1.setOutput('tag', tagForDeployment);
     }
@@ -6196,34 +6212,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.readJson = exports.getAllPackages = exports.getChangedPackages = exports.getLastDeployedRef = exports.getTagForDeployment = void 0;
+exports.readJson = exports.getAllPackages = exports.getChangedPackages = exports.getDiffTargetMain = exports.getDiffTargetPullRequest = exports.getTagForDeployment = void 0;
 const fs_1 = __importDefault(__webpack_require__(747));
 const github_1 = __webpack_require__(978);
-const core_1 = __webpack_require__(186);
-const getTagForDeployment = (environment) => {
-    const pullRequestNumber = github_1.getPullRequestNumber();
-    if (pullRequestNumber) {
-        return `preview-${pullRequestNumber}`;
-    }
-    if (github_1.isMainBranch()) {
-        return environment;
-    }
-    throw new Error('This action only supports push event on main branch or pull request events');
+const getTagForDeployment = (pullRequestNumber, environment) => {
+    return pullRequestNumber ? `preview-${pullRequestNumber}` : environment;
 };
 exports.getTagForDeployment = getTagForDeployment;
-const getLastDeployedRef = (environment, tagName) => {
-    core_1.debug(`Looking for last deployed ref - "${tagName}"`);
+const getDiffTargetPullRequest = (tagName) => {
     const tagSha = github_1.getTagSha(tagName);
-    if (tagSha) {
-        return tagSha;
-    }
-    core_1.debug(`Tag was not found, deploy based on environment - "${environment}" `);
-    return github_1.getTagSha(environment);
+    return tagSha ? tagName : 'origin/main';
 };
-exports.getLastDeployedRef = getLastDeployedRef;
-const getChangedPackages = (lastDeployedRef, rushPackages) => {
+exports.getDiffTargetPullRequest = getDiffTargetPullRequest;
+const getDiffTargetMain = (tagName) => {
+    const tagSha = github_1.getTagSha(tagName);
+    return tagSha ? tagName : null;
+};
+exports.getDiffTargetMain = getDiffTargetMain;
+const getChangedPackages = (diffTarget, rushPackages) => {
     return rushPackages.reduce((changes, _package) => {
-        if (github_1.isChangeInPath(lastDeployedRef, _package.projectFolder)) {
+        if (github_1.isChangeInPath(diffTarget, _package.projectFolder)) {
             updatePackageCategories(_package, changes);
         }
         return changes;

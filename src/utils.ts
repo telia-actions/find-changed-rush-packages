@@ -1,34 +1,28 @@
 import fs from 'fs';
-import { getPullRequestNumber, getTagSha, isMainBranch, isChangeInPath } from './github';
-import { debug } from '@actions/core';
+import { getTagSha, isChangeInPath } from './github';
 
-export const getTagForDeployment = (environment: string): string => {
-  const pullRequestNumber = getPullRequestNumber();
-  if (pullRequestNumber) {
-    return `preview-${pullRequestNumber}`;
-  }
-  if (isMainBranch()) {
-    return environment;
-  }
-  throw new Error('This action only supports push event on main branch or pull request events');
+export const getTagForDeployment = (pullRequestNumber: number, environment: string): string => {
+  return pullRequestNumber ? `preview-${pullRequestNumber}` : environment;
 };
 
-export const getLastDeployedRef = (environment: string, tagName: string): string => {
-  debug(`Looking for last deployed ref - "${tagName}"`);
+export const getDiffTargetPullRequest = (tagName: string): string => {
   const tagSha = getTagSha(tagName);
-  if (tagSha) {
-    return tagSha;
-  }
-  debug(`Tag was not found, deploy based on environment - "${environment}" `);
-  return getTagSha(environment);
+
+  return tagSha ? tagName : 'origin/main';
+};
+
+export const getDiffTargetMain = (tagName: string): string | null => {
+  const tagSha = getTagSha(tagName);
+
+  return tagSha ? tagName : null;
 };
 
 export const getChangedPackages = (
-  lastDeployedRef: string,
+  diffTarget: string,
   rushPackages: RushPackage[]
 ): RushPackage[] => {
   return rushPackages.reduce<RushPackage[]>((changes, _package) => {
-    if (isChangeInPath(lastDeployedRef, _package.projectFolder)) {
+    if (isChangeInPath(diffTarget, _package.projectFolder)) {
       updatePackageCategories(_package, changes);
     }
     return changes;

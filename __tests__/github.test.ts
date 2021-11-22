@@ -62,7 +62,7 @@ describe('Github', () => {
       expect(spy).toHaveBeenCalledWith('git', [
         'diff',
         '--quiet',
-        mockedCommitSha,
+        `${mockedCommitSha}...`,
         '--',
         mockedPath,
       ]);
@@ -84,6 +84,16 @@ describe('Github', () => {
           .mockReturnValueOnce({ status: 1 } as SpawnSyncReturns<Buffer>);
         const isChanged = isChangeInPath(mockedCommitSha, mockedPath);
         expect(isChanged).toBe(true);
+      });
+    });
+    describe('given that git diff status is not 1 or 0', () => {
+      it('should throw', () => {
+        jest
+          .spyOn(child_process, 'spawnSync')
+          .mockReturnValueOnce({ status: 129 } as SpawnSyncReturns<Buffer>);
+        expect(() => isChangeInPath(mockedCommitSha, mockedPath)).toThrow(
+          `Git returned a non-success code for path: ${mockedPath}`
+        );
       });
     });
   });
