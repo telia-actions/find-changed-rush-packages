@@ -42,7 +42,7 @@ jobs:
         uses: ./ # Uses an action in the root directory
         id: test
         with:
-          rushProjects: ${{ fromJSON([{"packageName":"foo","projectFolder":"__mocks__/packages/foo"},{"packageName":"bar","projectFolder":"__mocks__/packages/bar"}])}}
+          rushProjects: ${{ toJSON([{"packageName":"foo","projectFolder":"__mocks__/packages/foo"},{"packageName":"bar","projectFolder":"__mocks__/packages/bar"}]) }}
           environment: ${{ env.DEPLOY_ENVIRONMENT }}
       - name: Show AWS projects
         run: echo "AWS Projects - ${{ steps.test.outputs.changedProjects }}"
