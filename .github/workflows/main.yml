@@ -38,7 +38,7 @@ jobs:
           then
               echo "DEPLOY_ENVIRONMENT=staging" >> $GITHUB_ENV
           fi
-      - name: Testing rush changed packages action
+      - name: Testing rush changed projects action
         uses: ./ # Uses an action in the root directory
         id: test
         with:
