@@ -5,7 +5,7 @@
   "license": "MIT",
   "main": "dist/index.js",
   "scripts": {
-    "build": "ncc build src/main.ts",
+    "build": "ncc build src/index.ts",
     "format": "prettier . --check",
     "format:fix": "prettier . --check --write",
     "lint": "eslint **/*.ts --cache",
@@ -29,6 +29,7 @@
     "jest-preset-typescript": "^1.2.0",
     "prettier": "^2.2.1",
     "ts-jest": "^26.4.4",
+    "ts-node": "^10.4.0",
     "typescript": "~4.1.3"
   }
 }

@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "es6",
     "module": "commonjs",
-    "outDir": "./lib",
-    "rootDir": "./src",
     "resolveJsonModule": true,
     "strict": true,
     "noImplicitAny": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "paths": {
+      "@src*": ["src*"]
+    }
   },
-  "exclude": ["node_modules", "__mocks__", "**/*.test.ts"]
+  "exclude": ["node_modules"]
 }
