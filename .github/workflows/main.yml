@@ -44,7 +44,7 @@ jobs:
         with:
           rushProjects: '[{"packageName":"foo","projectFolder":"__mocks__/packages/foo"},{"packageName":"bar","projectFolder":"__mocks__/packages/bar"}]'
           environment: ${{ env.DEPLOY_ENVIRONMENT }}
-      - name: Show AWS projects
-        run: echo "AWS Projects - ${{ steps.test.outputs.changedProjects }}"
+      - name: Show Changed projects
+        run: echo "Changed Projects - ${{ steps.test.outputs.changedProjects }}"
       - name: Show last deployed tag name
         run: echo "Last deployed tag - ${{ steps.test.outputs.tag }}"
