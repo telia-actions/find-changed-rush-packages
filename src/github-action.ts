@@ -21,6 +21,7 @@ export const run = (): void => {
     const diffTarget = isMain
       ? getDiffTargetMain(tagForDeployment)
       : getDiffTargetPullRequest(tagForDeployment);
+    debug(rushProjectsInput);
     const rushProjects: RushProject[] = JSON.parse(rushProjectsInput);
     debug(JSON.stringify(rushProjects, null, 2));
     const changedProjects = diffTarget
