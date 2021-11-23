@@ -42,11 +42,9 @@ jobs:
         uses: ./ # Uses an action in the root directory
         id: test
         with:
-          rushProjects: ./__mocks__/rushProjects.json
+          rushProjects: "[{'packageName':'foo','projectFolder':'__mocks__/packages/foo'},{'packageName':'bar','projectFolder':'__mocks__/packages/bar'},]"
           environment: ${{ env.DEPLOY_ENVIRONMENT }}
       - name: Show AWS projects
-        run: echo "AWS Projects - ${{ steps.test.outputs.aws }}"
-      - name: Show K8S projects
-        run: echo "K8S projects - ${{ steps.test.outputs.k8s }}"
+        run: echo "AWS Projects - ${{ steps.test.outputs.changedProjects }}"
       - name: Show last deployed tag name
         run: echo "Last deployed tag - ${{ steps.test.outputs.tag }}"
