@@ -6149,9 +6149,9 @@ const run = () => {
         const diffTarget = isMain
             ? github_context_1.getDiffTargetMain(tagForDeployment)
             : github_context_1.getDiffTargetPullRequest(tagForDeployment);
-        core_1.debug(rushProjectsInput);
         const rushProjects = JSON.parse(rushProjectsInput);
         core_1.debug(JSON.stringify(rushProjects, null, 2));
+        core_1.debug(`Comparing with - ${diffTarget}` || 'Deploy everything');
         const changedProjects = diffTarget
             ? find_changed_projects_1.findChangedProjects(diffTarget, rushProjects)
             : rushProjects;

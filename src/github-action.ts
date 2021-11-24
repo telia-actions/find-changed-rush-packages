@@ -23,7 +23,7 @@ export const run = (): void => {
       : getDiffTargetPullRequest(tagForDeployment);
     const rushProjects: RushProject[] = JSON.parse(rushProjectsInput);
     debug(JSON.stringify(rushProjects, null, 2));
-    debug(diffTarget || 'Depploy everything');
+    debug(`Comparing with - ${diffTarget}` || 'Deploy everything');
     const changedProjects = diffTarget
       ? findChangedProjects(diffTarget, rushProjects)
       : rushProjects;
