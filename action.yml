@@ -1,10 +1,9 @@
-name: Rush changed packages
-description: Find changed packages and sort them according to review category
+name: Rush changed projects
+description: Detect which rush projects has changes since given git ref
 inputs:
-  rushJsonPath:
-    description: Path to rush.json file.
-    required: false
-    default: './rush.json'
+  rushProjects:
+    description: Rush projects array
+    required: true
   environment:
     description: Deployment environment.
     required: true

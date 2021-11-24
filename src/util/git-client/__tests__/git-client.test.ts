@@ -1,42 +1,10 @@
-import { getTagSha, getPullRequestNumber, isMainBranch, isChangeInPath } from '../src/github';
-import { context } from '@actions/github';
 import child_process, { SpawnSyncReturns } from 'child_process';
-
+import { isChangeInPath, getTagSha } from '..';
 const mockedPullRequestNumber = 1;
 const mockedCommitSha = 'mocksha';
 const mockedPath = '/__mocks__';
 
-describe('Github', () => {
-  describe('getPullRequestNumber method', () => {
-    describe('given that pull request exist', () => {
-      it('should return pull request number', () => {
-        context.payload.pull_request = {
-          number: mockedPullRequestNumber,
-        };
-        expect(getPullRequestNumber()).toBe(mockedPullRequestNumber);
-      });
-    });
-    describe('given that pull request does not exist', () => {
-      it('should return "0"', () => {
-        context.payload.pull_request = undefined;
-        expect(getPullRequestNumber()).toBe(0);
-      });
-    });
-  });
-  describe('isMainBranch method', () => {
-    describe('given that github reference is from main branch', () => {
-      it('should return true', () => {
-        context.ref = 'refs/heads/main';
-        expect(isMainBranch()).toBe(true);
-      });
-    });
-    describe('given that github reference is from feature branch', () => {
-      it('should return false', () => {
-        context.ref = 'refs/heads/feature--branch';
-        expect(isMainBranch()).toBe(false);
-      });
-    });
-  });
+describe('github client', () => {
   describe('getTagSha method', () => {
     it('should call spawnSync with git rev-list command', () => {
       const spy = jest
@@ -86,7 +54,7 @@ describe('Github', () => {
         expect(isChanged).toBe(true);
       });
     });
-    describe('given that git diff status is not 1 or 0', () => {
+    describe('given that git diff status is nor 1 neither 0', () => {
       it('should throw', () => {
         jest
           .spyOn(child_process, 'spawnSync')

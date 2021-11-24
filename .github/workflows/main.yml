@@ -38,15 +38,13 @@ jobs:
           then
               echo "DEPLOY_ENVIRONMENT=staging" >> $GITHUB_ENV
           fi
-      - name: Testing rush changed packages action
+      - name: Testing rush changed projects action
         uses: ./ # Uses an action in the root directory
         id: test
         with:
-          rushJsonPath: ./__mocks__/rush.json
+          rushProjects: '[{"packageName":"foo","projectFolder":"__mocks__/packages/foo"},{"packageName":"bar","projectFolder":"__mocks__/packages/bar"}]'
           environment: ${{ env.DEPLOY_ENVIRONMENT }}
-      - name: Show AWS projects
-        run: echo "AWS Projects - ${{ steps.test.outputs.aws }}"
-      - name: Show K8S projects
-        run: echo "K8S projects - ${{ steps.test.outputs.k8s }}"
+      - name: Show Changed projects
+        run: echo "Changed Projects - ${{ steps.test.outputs.changedProjects }}"
       - name: Show last deployed tag name
         run: echo "Last deployed tag - ${{ steps.test.outputs.tag }}"
