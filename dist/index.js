@@ -6304,6 +6304,7 @@ __exportStar(__webpack_require__(4880), exports);
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getMainDiffBase = exports.getPullRequestDiffBase = exports.getTagForPullRequestDeployment = exports.getTagForMainDeployment = exports.isMainBranch = exports.getPullRequestDiffTarget = exports.getMainDiffTarget = exports.getPullRequestNumber = void 0;
 const github_1 = __webpack_require__(5438);
+const core_1 = __webpack_require__(2186);
 const git_client_1 = __webpack_require__(3629);
 const getPullRequestNumber = () => {
     var _a;
@@ -6315,6 +6316,7 @@ const getMainDiffTarget = () => {
 };
 exports.getMainDiffTarget = getMainDiffTarget;
 const getPullRequestDiffTarget = () => {
+    core_1.debug(JSON.stringify(github_1.context.payload, null, 2));
     return github_1.context.payload.after;
 };
 exports.getPullRequestDiffTarget = getPullRequestDiffTarget;

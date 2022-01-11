@@ -1,4 +1,5 @@
 import { context } from '@actions/github';
+import { debug } from '@actions/core';
 import { getTagSha } from '@src/util/git-client';
 
 export const getPullRequestNumber = (): number => {
@@ -10,6 +11,7 @@ export const getMainDiffTarget = (): string => {
 };
 
 export const getPullRequestDiffTarget = (): string => {
+  debug(JSON.stringify(context.payload, null, 2));
   return context.payload.after;
 };
 
