@@ -2,11 +2,14 @@ import { context } from '@actions/github';
 import {
   getPullRequestNumber,
   isMainBranch,
-  getTagForDeployment,
-  getDiffTargetPullRequest,
-  getDiffTargetMain,
+  getTagForPullRequestDeployment,
+  getTagForMainDeployment,
+  getPullRequestDiffBase,
+  getMainDiffBase,
+  getMainDiffTarget,
 } from '../github-context';
 import * as github from '@src/util/git-client/git-client';
+import { getPullRequestDiffTarget } from '..';
 
 const mockedPullRequestNumber = 1;
 const mockedEnvironment = 'mockenv';
@@ -74,25 +77,23 @@ describe('github context utilities', () => {
       });
     });
   });
-  describe('getTagForDeployment method', () => {
-    describe('given that we are on the main branch', () => {
-      it('should return a tag matching the given environment name', () => {
-        const tagName = getTagForDeployment(0, mockedEnvironment);
-        expect(tagName).toBe(mockedEnvironment);
-      });
-    });
-    describe('given that we are in a branch which is part of a pull request', () => {
-      it('should return a tag matching the current pull requests number', () => {
-        const tagName = getTagForDeployment(mockedPullRequestNumber, mockedEnvironment);
-        expect(tagName).toBe(`preview-${mockedPullRequestNumber}`);
-      });
+  describe('getTagForPullRequestDeployment method', () => {
+    it('should return a tag matching the current pull requests number', () => {
+      const tagName = getTagForPullRequestDeployment(mockedPullRequestNumber);
+      expect(tagName).toBe(`preview-${mockedPullRequestNumber}`);
     });
   });
-  describe('getDiffTargetPullRequest method', () => {
+  describe('getTagForMainDeployment method', () => {
+    it('should return a tag matching the given environment name', () => {
+      const tagName = getTagForMainDeployment(mockedEnvironment);
+      expect(tagName).toBe(mockedEnvironment);
+    });
+  });
+  describe('getPullRequestDiffBase method', () => {
     describe('given tag exists', () => {
       it('should return a tag', () => {
         const getTagShaSpy = jest.spyOn(github, 'getTagSha').mockReturnValue(mockedCommitSha);
-        const diffTarget = getDiffTargetPullRequest(mockedTagName);
+        const diffTarget = getPullRequestDiffBase(mockedTagName);
         expect(getTagShaSpy).toHaveBeenCalledTimes(1);
         expect(getTagShaSpy).toHaveBeenCalledWith(mockedTagName);
         expect(diffTarget).toBe(mockedTagName);
@@ -101,18 +102,18 @@ describe('github context utilities', () => {
     describe(`given tag doesn't exist`, () => {
       it('should return main branch fallback', () => {
         const getTagShaSpy = jest.spyOn(github, 'getTagSha').mockReturnValue('');
-        const diffTarget = getDiffTargetPullRequest(mockedTagName);
+        const diffTarget = getPullRequestDiffBase(mockedTagName);
         expect(getTagShaSpy).toHaveBeenCalledTimes(1);
         expect(getTagShaSpy).toHaveBeenCalledWith(mockedTagName);
         expect(diffTarget).toBe('origin/main');
       });
     });
   });
-  describe('getDiffTargetMain method', () => {
+  describe('getMainDiffBase method', () => {
     describe('given tag exists', () => {
       it('should return a tag', () => {
         const getTagShaSpy = jest.spyOn(github, 'getTagSha').mockReturnValue(mockedCommitSha);
-        const diffTarget = getDiffTargetMain(mockedTagName);
+        const diffTarget = getMainDiffBase(mockedTagName);
         expect(getTagShaSpy).toHaveBeenCalledTimes(1);
         expect(getTagShaSpy).toHaveBeenCalledWith(mockedTagName);
         expect(diffTarget).toBe(mockedTagName);
@@ -121,11 +122,23 @@ describe('github context utilities', () => {
     describe(`given tag doesn't exist`, () => {
       it('should return null', () => {
         const getTagShaSpy = jest.spyOn(github, 'getTagSha').mockReturnValue('');
-        const diffTarget = getDiffTargetMain(mockedTagName);
+        const diffTarget = getMainDiffBase(mockedTagName);
         expect(getTagShaSpy).toHaveBeenCalledTimes(1);
         expect(getTagShaSpy).toHaveBeenCalledWith(mockedTagName);
         expect(diffTarget).toBe(null);
       });
+    });
+  });
+  describe('getMainDiffTarget', () => {
+    it('should return the currently checked-out commit (HEAD)', () => {
+      expect(getMainDiffTarget()).toBe('HEAD');
+    });
+  });
+
+  describe('getPullRequestDiffTarget', () => {
+    it('should return the recently pushed commit', () => {
+      context.payload.after = mockedCommitSha;
+      expect(getPullRequestDiffTarget()).toBe(mockedCommitSha);
     });
   });
 });

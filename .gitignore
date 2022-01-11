@@ -1,6 +1,9 @@
 # Dependency directory
 node_modules
 
+# Test coverage output
+coverage
+
 # Logs
 logs
 *.log

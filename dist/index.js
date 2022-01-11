@@ -6143,27 +6143,50 @@ const run = () => {
         if (!pullRequestNumber && !isMain) {
             throw new Error('This action only supports push event on main branch or pull request events');
         }
-        const environment = core_1.getInput('environment');
         const rushProjectsInput = core_1.getInput('rushProjects');
-        const tagForDeployment = github_context_1.getTagForDeployment(pullRequestNumber, environment);
-        const diffTarget = isMain
-            ? github_context_1.getDiffTargetMain(tagForDeployment)
-            : github_context_1.getDiffTargetPullRequest(tagForDeployment);
-        const rushProjects = JSON.parse(rushProjectsInput);
-        core_1.debug(JSON.stringify(rushProjects, null, 2));
-        core_1.debug(`Comparing with - ${diffTarget}` || 'Deploy everything');
-        const changedProjects = diffTarget
-            ? find_changed_projects_1.findChangedProjects(diffTarget, rushProjects)
-            : rushProjects;
-        core_1.debug(JSON.stringify(changedProjects, null, 2));
-        core_1.setOutput('changedProjects', changedProjects);
-        core_1.setOutput('tag', tagForDeployment);
+        const inputs = {
+            pullRequestNumber,
+            environment: core_1.getInput('environment'),
+            rushProjects: JSON.parse(rushProjectsInput),
+        };
+        const outputs = pullRequestNumber ? runForPullRequest(inputs) : runForMain(inputs);
+        core_1.debug(`Changed projects:\n${JSON.stringify(outputs.changedProjects, null, 2)}`);
+        core_1.setOutput('changedProjects', outputs.changedProjects);
+        core_1.setOutput('tag', outputs.tag);
     }
     catch (error) {
         core_1.setFailed(error.message);
     }
 };
 exports.run = run;
+function runForMain(input) {
+    const tag = github_context_1.getTagForMainDeployment(input.environment);
+    const diffBase = github_context_1.getMainDiffBase(tag);
+    const diffTarget = github_context_1.getMainDiffTarget();
+    core_1.debug(`Diffing files for ${input.environment}\nDiff base: ${diffBase}\nDiff target: ${diffTarget}`);
+    if (diffBase === null) {
+        return {
+            changedProjects: input.rushProjects,
+            tag,
+        };
+    }
+    const changedProjects = find_changed_projects_1.findChangedProjects(diffBase, diffTarget, input.rushProjects);
+    return {
+        changedProjects,
+        tag,
+    };
+}
+function runForPullRequest(input) {
+    const tag = github_context_1.getTagForPullRequestDeployment(input.pullRequestNumber);
+    const diffBase = github_context_1.getPullRequestDiffBase(tag);
+    const diffTarget = github_context_1.getPullRequestDiffTarget();
+    core_1.debug(`Diffing files for PR\nDiff base: ${diffBase}\nDiff target: ${diffTarget}`);
+    const changedProjects = find_changed_projects_1.findChangedProjects(diffBase, diffTarget, input.rushProjects);
+    return {
+        changedProjects,
+        tag,
+    };
+}
 
 
 /***/ }),
@@ -6188,13 +6211,9 @@ github_action_1.run();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.findChangedProjects = void 0;
 const git_client_1 = __webpack_require__(3629);
-const findChangedProjects = (diffTarget, rushProjects) => {
-    return rushProjects.reduce((changes, project) => {
-        if (git_client_1.isChangeInPath(diffTarget, project.projectFolder)) {
-            changes.push(project);
-        }
-        return changes;
-    }, []);
+const findChangedProjects = (diffBase, diffTarget, rushProjects) => {
+    const projectWasChanged = (project) => git_client_1.isPathChanged(diffBase, diffTarget, project.projectFolder);
+    return rushProjects.filter(projectWasChanged);
 };
 exports.findChangedProjects = findChangedProjects;
 
@@ -6228,21 +6247,30 @@ __exportStar(__webpack_require__(5929), exports);
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isChangeInPath = exports.getTagSha = void 0;
+exports.isPathChanged = exports.getTagSha = void 0;
 const child_process_1 = __webpack_require__(3129);
 const getTagSha = (tagName) => {
     return child_process_1.spawnSync('git', ['rev-list', '-n', '1', tagName]).stdout.toString().trim();
 };
 exports.getTagSha = getTagSha;
-const isChangeInPath = (target, path) => {
-    const { status } = child_process_1.spawnSync('git', ['diff', '--quiet', `${target}...`, '--', path]);
+/**
+ * Checks whether `path` has been modified by any commits that are in `target` but not in `base`.
+ * Changes made in base but not target will be ignored.
+ *
+ * @param base (a git ref) - The "stable" point of reference. We are looking for changes made after this point
+ * @param target (a git ref) - The latest commit that we are looking for changes in.
+ * @param path  (a file system path) - The path that we are checking for changes
+ * @returns true if the path (or a subpath) was changed in target compared to base
+ */
+const isPathChanged = (base, target, path) => {
+    const { status } = child_process_1.spawnSync('git', ['diff', '--quiet', `${base}...${target}`, '--', path]);
     if (status === 1)
         return true;
     if (status === 0)
         return false;
     throw new Error(`Git returned a non-success code for path: ${path}`);
 };
-exports.isChangeInPath = isChangeInPath;
+exports.isPathChanged = isPathChanged;
 
 
 /***/ }),
@@ -6274,7 +6302,7 @@ __exportStar(__webpack_require__(4880), exports);
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getDiffTargetMain = exports.getDiffTargetPullRequest = exports.getTagForDeployment = exports.isMainBranch = exports.getPullRequestNumber = void 0;
+exports.getMainDiffBase = exports.getPullRequestDiffBase = exports.getTagForPullRequestDeployment = exports.getTagForMainDeployment = exports.isMainBranch = exports.getPullRequestDiffTarget = exports.getMainDiffTarget = exports.getPullRequestNumber = void 0;
 const github_1 = __webpack_require__(5438);
 const git_client_1 = __webpack_require__(3629);
 const getPullRequestNumber = () => {
@@ -6282,24 +6310,36 @@ const getPullRequestNumber = () => {
     return ((_a = github_1.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number) || 0;
 };
 exports.getPullRequestNumber = getPullRequestNumber;
+const getMainDiffTarget = () => {
+    return 'HEAD';
+};
+exports.getMainDiffTarget = getMainDiffTarget;
+const getPullRequestDiffTarget = () => {
+    return github_1.context.payload.after;
+};
+exports.getPullRequestDiffTarget = getPullRequestDiffTarget;
 const isMainBranch = () => {
     return github_1.context.ref === 'refs/heads/main';
 };
 exports.isMainBranch = isMainBranch;
-const getTagForDeployment = (pullRequestNumber, environment) => {
-    return pullRequestNumber ? `preview-${pullRequestNumber}` : environment;
+const getTagForMainDeployment = (environment) => {
+    return environment;
 };
-exports.getTagForDeployment = getTagForDeployment;
-const getDiffTargetPullRequest = (tagName) => {
+exports.getTagForMainDeployment = getTagForMainDeployment;
+const getTagForPullRequestDeployment = (pullRequestNumber) => {
+    return `preview-${pullRequestNumber}`;
+};
+exports.getTagForPullRequestDeployment = getTagForPullRequestDeployment;
+const getPullRequestDiffBase = (tagName) => {
     const tagSha = git_client_1.getTagSha(tagName);
     return tagSha ? tagName : 'origin/main';
 };
-exports.getDiffTargetPullRequest = getDiffTargetPullRequest;
-const getDiffTargetMain = (tagName) => {
+exports.getPullRequestDiffBase = getPullRequestDiffBase;
+const getMainDiffBase = (tagName) => {
     const tagSha = git_client_1.getTagSha(tagName);
     return tagSha ? tagName : null;
 };
-exports.getDiffTargetMain = getDiffTargetMain;
+exports.getMainDiffBase = getMainDiffBase;
 
 
 /***/ }),

@@ -1,7 +1,9 @@
 import child_process, { SpawnSyncReturns } from 'child_process';
-import { isChangeInPath, getTagSha } from '..';
+import { isPathChanged, getTagSha } from '..';
+
 const mockedPullRequestNumber = 1;
-const mockedCommitSha = 'mocksha';
+const mockedBaseSha = 'mockbase';
+const mockedNewSha = 'mocknew';
 const mockedPath = '/__mocks__';
 
 describe('github client', () => {
@@ -9,9 +11,9 @@ describe('github client', () => {
     it('should call spawnSync with git rev-list command', () => {
       const spy = jest
         .spyOn(child_process, 'spawnSync')
-        .mockReturnValueOnce({ stdout: Buffer.from(mockedCommitSha) } as SpawnSyncReturns<Buffer>);
+        .mockReturnValueOnce({ stdout: Buffer.from(mockedBaseSha) } as SpawnSyncReturns<Buffer>);
       const commitSha = getTagSha(`preview-${mockedPullRequestNumber}`);
-      expect(commitSha).toBe(mockedCommitSha);
+      expect(commitSha).toBe(mockedBaseSha);
       expect(spy).toHaveBeenCalledWith('git', [
         'rev-list',
         '-n',
@@ -26,11 +28,11 @@ describe('github client', () => {
       const spy = jest
         .spyOn(child_process, 'spawnSync')
         .mockReturnValueOnce({ status: 0 } as SpawnSyncReturns<Buffer>);
-      isChangeInPath(mockedCommitSha, mockedPath);
+      isPathChanged(mockedBaseSha, mockedNewSha, mockedPath);
       expect(spy).toHaveBeenCalledWith('git', [
         'diff',
         '--quiet',
-        `${mockedCommitSha}...`,
+        `${mockedBaseSha}...${mockedNewSha}`,
         '--',
         mockedPath,
       ]);
@@ -41,7 +43,7 @@ describe('github client', () => {
         jest
           .spyOn(child_process, 'spawnSync')
           .mockReturnValueOnce({ status: 0 } as SpawnSyncReturns<Buffer>);
-        const isChanged = isChangeInPath(mockedCommitSha, mockedPath);
+        const isChanged = isPathChanged(mockedBaseSha, mockedNewSha, mockedPath);
         expect(isChanged).toBe(false);
       });
     });
@@ -50,7 +52,7 @@ describe('github client', () => {
         jest
           .spyOn(child_process, 'spawnSync')
           .mockReturnValueOnce({ status: 1 } as SpawnSyncReturns<Buffer>);
-        const isChanged = isChangeInPath(mockedCommitSha, mockedPath);
+        const isChanged = isPathChanged(mockedBaseSha, mockedNewSha, mockedPath);
         expect(isChanged).toBe(true);
       });
     });
@@ -59,7 +61,7 @@ describe('github client', () => {
         jest
           .spyOn(child_process, 'spawnSync')
           .mockReturnValueOnce({ status: 129 } as SpawnSyncReturns<Buffer>);
-        expect(() => isChangeInPath(mockedCommitSha, mockedPath)).toThrow(
+        expect(() => isPathChanged(mockedBaseSha, mockedNewSha, mockedPath)).toThrow(
           `Git returned a non-success code for path: ${mockedPath}`
         );
       });
