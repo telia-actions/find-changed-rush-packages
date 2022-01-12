@@ -5,6 +5,5 @@ export const findChangedProjects = (
   diffTarget: string,
   rushProjects: RushProject[]
 ) => {
-  const projectWasChanged = (project: RushProject) => isPathChanged(diffBase, diffTarget, project.projectFolder);
-  return rushProjects.filter(projectWasChanged);
+  return rushProjects.filter(({ projectFolder }) => isPathChanged(diffBase, diffTarget, projectFolder));
 };
