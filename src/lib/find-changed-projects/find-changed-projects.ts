@@ -1,13 +1,9 @@
-import { isChangeInPath } from "@src/util/git-client";
+import { isPathChanged } from "@src/util/git-client";
 
 export const findChangedProjects = (
+  diffBase: string,
   diffTarget: string,
   rushProjects: RushProject[]
 ) => {
-  return rushProjects.reduce<RushProject[]>((changes, project) => {
-    if (isChangeInPath(diffTarget, project.projectFolder)) {
-      changes.push(project)
-    }
-    return changes;
-  }, []);
+  return rushProjects.filter(({ projectFolder }) => isPathChanged(diffBase, diffTarget, projectFolder));
 };

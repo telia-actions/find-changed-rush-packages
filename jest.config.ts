@@ -6,7 +6,7 @@ const config: Config.InitialOptions = {
   preset: 'jest-preset-typescript',
   testEnvironment: 'node',
   collectCoverage: true,
-  coverageReporters: ['text-summary', 'text'],
+  coverageReporters: ['text-summary', 'text', 'html'],
   coverageThreshold: {
     global: {
       statements: 100,
