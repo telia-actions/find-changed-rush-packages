@@ -12,7 +12,7 @@ export const getMainDiffTarget = (): string => {
 
 export const getPullRequestDiffTarget = (): string => {
   debug(JSON.stringify(context.payload, null, 2));
-  return context.payload.after;
+  return context.payload.pull_request?.head.sha;
 };
 
 export const isMainBranch = (): boolean => {
