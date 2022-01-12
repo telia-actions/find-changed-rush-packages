@@ -6317,7 +6317,8 @@ const getMainDiffTarget = () => {
 exports.getMainDiffTarget = getMainDiffTarget;
 const getPullRequestDiffTarget = () => {
     core_1.debug(JSON.stringify(github_1.context.payload, null, 2));
-    return github_1.context.payload.after;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return github_1.context.payload.pull_request.head.sha;
 };
 exports.getPullRequestDiffTarget = getPullRequestDiffTarget;
 const isMainBranch = () => {

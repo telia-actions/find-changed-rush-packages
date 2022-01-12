@@ -137,7 +137,13 @@ describe('github context utilities', () => {
 
   describe('getPullRequestDiffTarget', () => {
     it('should return the recently pushed commit', () => {
-      context.payload.after = mockedCommitSha;
+      context.payload.pull_request = {
+        ...context.payload.pull_request,
+        head: {
+          ...context.payload.pull_request?.head,
+          sha: mockedCommitSha,
+        },
+      } as typeof context.payload.pull_request;
       expect(getPullRequestDiffTarget()).toBe(mockedCommitSha);
     });
   });
