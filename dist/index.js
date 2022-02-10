@@ -6139,10 +6139,10 @@ const find_changed_projects_1 = __webpack_require__(1392);
 const run = () => {
     try {
         const pullRequestNumber = github_context_1.getPullRequestNumber();
-        const isMain = github_context_1.isMainBranch();
-        if (!pullRequestNumber && !isMain) {
-            throw new Error('This action only supports push event on main branch or pull request events');
-        }
+        // const isMain = isMainBranch();
+        // if (!pullRequestNumber && !isMain) {
+        //   throw new Error('This action only supports push event on main branch or pull request events');
+        // }
         const rushProjectsInput = core_1.getInput('rushProjects');
         const inputs = {
             pullRequestNumber,
@@ -6150,7 +6150,7 @@ const run = () => {
             rushProjects: JSON.parse(rushProjectsInput),
         };
         const outputs = pullRequestNumber ? runForPullRequest(inputs) : runForMain(inputs);
-        core_1.debug(`Changed projects:\n${JSON.stringify(outputs.changedProjects, null, 2)}`);
+        core_1.info(`Changed projects:\n${JSON.stringify(outputs.changedProjects, null, 2)}`);
         core_1.setOutput('changedProjects', outputs.changedProjects);
         core_1.setOutput('tag', outputs.tag);
     }
@@ -6212,8 +6212,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.findChangedProjects = void 0;
 const git_client_1 = __webpack_require__(3629);
 const findChangedProjects = (diffBase, diffTarget, rushProjects) => {
-    const projectWasChanged = (project) => git_client_1.isPathChanged(diffBase, diffTarget, project.projectFolder);
-    return rushProjects.filter(projectWasChanged);
+    return rushProjects.filter(({ projectFolder }) => git_client_1.isPathChanged(diffBase, diffTarget, projectFolder));
 };
 exports.findChangedProjects = findChangedProjects;
 
@@ -6304,7 +6303,6 @@ __exportStar(__webpack_require__(4880), exports);
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getMainDiffBase = exports.getPullRequestDiffBase = exports.getTagForPullRequestDeployment = exports.getTagForMainDeployment = exports.isMainBranch = exports.getPullRequestDiffTarget = exports.getMainDiffTarget = exports.getPullRequestNumber = void 0;
 const github_1 = __webpack_require__(5438);
-const core_1 = __webpack_require__(2186);
 const git_client_1 = __webpack_require__(3629);
 const getPullRequestNumber = () => {
     var _a;
@@ -6316,8 +6314,6 @@ const getMainDiffTarget = () => {
 };
 exports.getMainDiffTarget = getMainDiffTarget;
 const getPullRequestDiffTarget = () => {
-    core_1.debug(JSON.stringify(github_1.context.payload, null, 2));
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return github_1.context.payload.pull_request.head.sha;
 };
 exports.getPullRequestDiffTarget = getPullRequestDiffTarget;
