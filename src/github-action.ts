@@ -1,7 +1,6 @@
-import { debug, getInput, setFailed, setOutput } from '@actions/core';
+import { debug, getInput, info, setFailed, setOutput } from '@actions/core';
 import {
   getPullRequestNumber,
-  isMainBranch,
   getMainDiffBase,
   getMainDiffTarget,
   getPullRequestDiffBase as getPullRequestDiffBase,
@@ -14,10 +13,10 @@ import { findChangedProjects } from '@src/lib/find-changed-projects';
 export const run = (): void => {
   try {
     const pullRequestNumber = getPullRequestNumber();
-    const isMain = isMainBranch();
-    if (!pullRequestNumber && !isMain) {
-      throw new Error('This action only supports push event on main branch or pull request events');
-    }
+    // const isMain = isMainBranch();
+    // if (!pullRequestNumber && !isMain) {
+    //   throw new Error('This action only supports push event on main branch or pull request events');
+    // }
 
     const rushProjectsInput = getInput('rushProjects');
     const inputs = {
@@ -27,7 +26,7 @@ export const run = (): void => {
     };
 
     const outputs = pullRequestNumber ? runForPullRequest(inputs) : runForMain(inputs);
-    debug(`Changed projects:\n${JSON.stringify(outputs.changedProjects, null, 2)}`);
+    info(`Changed projects:\n${JSON.stringify(outputs.changedProjects, null, 2)}`);
 
     setOutput('changedProjects', outputs.changedProjects);
     setOutput('tag', outputs.tag);
