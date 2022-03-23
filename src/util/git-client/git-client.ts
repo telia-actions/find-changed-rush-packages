@@ -1,3 +1,4 @@
+import { info } from '@actions/core';
 import { spawnSync } from 'child_process';
 
 export const getTagSha = (tagName: string): string => {
@@ -14,6 +15,8 @@ export const getTagSha = (tagName: string): string => {
  * @returns true if the path (or a subpath) was changed in target compared to base
  */
 export const isPathChanged = (base: string, target: string, path: string): boolean => {
+  info(`Diff between ${base} with ${target} for path: ${path}`);
+
   const { status } = spawnSync('git', ['diff', '--quiet', `${base}...${target}`, '--', path]);
   if (status === 1) return true;
   if (status === 0) return false;

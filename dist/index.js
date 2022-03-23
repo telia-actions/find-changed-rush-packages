@@ -6212,8 +6212,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.findChangedProjects = void 0;
 const git_client_1 = __webpack_require__(3629);
 const findChangedProjects = (diffBase, diffTarget, rushProjects) => {
-    const projectWasChanged = (project) => git_client_1.isPathChanged(diffBase, diffTarget, project.projectFolder);
-    return rushProjects.filter(projectWasChanged);
+    return rushProjects.filter(({ projectFolder }) => git_client_1.isPathChanged(diffBase, diffTarget, projectFolder));
 };
 exports.findChangedProjects = findChangedProjects;
 
@@ -6248,6 +6247,7 @@ __exportStar(__webpack_require__(5929), exports);
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isPathChanged = exports.getTagSha = void 0;
+const core_1 = __webpack_require__(2186);
 const child_process_1 = __webpack_require__(3129);
 const getTagSha = (tagName) => {
     return child_process_1.spawnSync('git', ['rev-list', '-n', '1', tagName]).stdout.toString().trim();
@@ -6263,6 +6263,7 @@ exports.getTagSha = getTagSha;
  * @returns true if the path (or a subpath) was changed in target compared to base
  */
 const isPathChanged = (base, target, path) => {
+    core_1.info(`Diff between ${base} with ${target} for path: ${path}`);
     const { status } = child_process_1.spawnSync('git', ['diff', '--quiet', `${base}...${target}`, '--', path]);
     if (status === 1)
         return true;
@@ -6304,7 +6305,6 @@ __exportStar(__webpack_require__(4880), exports);
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getMainDiffBase = exports.getPullRequestDiffBase = exports.getTagForPullRequestDeployment = exports.getTagForMainDeployment = exports.isMainBranch = exports.getPullRequestDiffTarget = exports.getMainDiffTarget = exports.getPullRequestNumber = void 0;
 const github_1 = __webpack_require__(5438);
-const core_1 = __webpack_require__(2186);
 const git_client_1 = __webpack_require__(3629);
 const getPullRequestNumber = () => {
     var _a;
@@ -6316,8 +6316,6 @@ const getMainDiffTarget = () => {
 };
 exports.getMainDiffTarget = getMainDiffTarget;
 const getPullRequestDiffTarget = () => {
-    core_1.debug(JSON.stringify(github_1.context.payload, null, 2));
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return github_1.context.payload.pull_request.head.sha;
 };
 exports.getPullRequestDiffTarget = getPullRequestDiffTarget;
