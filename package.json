@@ -17,7 +17,7 @@
     "@actions/core": "^1.2.6",
     "@actions/exec": "^1.0.4",
     "@actions/github": "^5.0.0",
-    "@microsoft/rush-lib": "^5.56.0",
+    "@microsoft/rush-lib": "^5.66.0",
     "@rushstack/node-core-library": "^3.43.2"
   },
   "devDependencies": {
