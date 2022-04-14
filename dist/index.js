@@ -6269,7 +6269,7 @@ const isPathChanged = (base, target, path) => {
         return true;
     if (status === 0)
         return false;
-    throw new Error(`Git returned a non-success code for path: ${path}`);
+    throw new Error(`Git returned a non-success code: ${status} for path: ${path}`);
 };
 exports.isPathChanged = isPathChanged;
 

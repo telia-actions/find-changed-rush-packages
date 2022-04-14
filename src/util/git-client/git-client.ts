@@ -20,5 +20,5 @@ export const isPathChanged = (base: string, target: string, path: string): boole
   const { status } = spawnSync('git', ['diff', '--quiet', `${base}...${target}`, '--', path]);
   if (status === 1) return true;
   if (status === 0) return false;
-  throw new Error(`Git returned a non-success code for path: ${path}`);
+  throw new Error(`Git returned a non-success code: ${status} for path: ${path}`);
 };
