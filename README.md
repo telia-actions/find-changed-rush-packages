@@ -1,3 +1,9 @@
+# Archived repository
+
+This action is no longer used nor maintained. Users within telia-company can find a corresponding action in the "fft-actions" repository.
+
+----
+
 # find-changed-rush-packages
 
 Github action to detect changed Rush.js projects
